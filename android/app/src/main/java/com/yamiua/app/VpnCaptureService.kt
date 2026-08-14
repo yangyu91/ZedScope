@@ -34,7 +34,7 @@ class VpnCaptureService : VpnService() {
             .allowFamily(android.system.OsConstants.AF_INET)
         try {
             // exclude our own app so the proxy/AI egress doesn't loop
-            addDisallowedApplication(packageName)
+            builder.addDisallowedApplication(packageName)
         } catch (_: Exception) {
         }
 
@@ -43,8 +43,8 @@ class VpnCaptureService : VpnService() {
             stopSelf()
             return START_NOT_STICKY
         }
-        fd = established
-        forwarder = VpnForwarder(established, host, port, this)
+        fd = established.fileDescriptor
+        forwarder = VpnForwarder(established.fileDescriptor, host, port, this)
         thread = Thread(forwarder, "yami-vpn").also { it.start() }
         return START_STICKY
     }

@@ -35,8 +35,6 @@
         <item name="colorOnSurfaceVariant">@color/yami_on_surface_dim</item>
         <item name="colorOutline">@color/yami_divider</item>
         <item name="colorOutlineVariant">@color/yami_divider_soft</item>
-        <item name="colorBackground">@color/yami_bg</item>
-        <item name="android:colorBackground">@color/yami_bg</item>
         <item name="colorError">@color/yami_danger</item>
         <item name="colorErrorContainer">@color/yami_danger_soft</item>
 
@@ -136,7 +134,7 @@
     </style>
 
     <!-- ===== Text fields ===== -->
-    <style name="Yami.EditText" parent="Widget.Material3.TextInputEditText">
+    <style name="Yami.EditText" parent="Widget.Material3.TextInputEditText.FilledBox">
         <item name="android:textColor">@color/yami_on_surface</item>
         <item name="android:textColorHint">@color/yami_on_surface_faint</item>
         <item name="android:background">@drawable/bg_input_state</item>

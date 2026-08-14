@@ -40,8 +40,13 @@ func Start(listenProxy, listenAPI string) string {
 	return "ok"
 }
 
-// CAPEM returns the root CA certificate (PEM) for the user to install.
-func CAPEM() string {
+// CaPEM returns the root CA certificate (PEM) for the user to install.
+//
+// NOTE: gomobile lowerFirst-cases the exported name, so `CaPEM` -> Java
+// `caPEM`. A fully-uppercase `CAPEM` would become `capem` and break the
+// Kotlin call site `Yami.caPEM()` (build error -> no APK). Do NOT rename
+// back to CAPEM.
+func CaPEM() string {
 	if core == nil {
 		return ""
 	}
@@ -446,6 +451,52 @@ func AiSetPlanner(on bool) string {
 	}
 	ai.SetDefaultPlannerEnabled(on)
 	return "ok"
+}
+
+// ===================== SSH session type =====================
+//
+// "ssh" is a first-class session type alongside the AI chat session: open a
+// remote shell and run commands, with combined output streamed back. Backed
+// by golang.org/x/crypto/ssh.
+
+var sshMgr = ai.NewSshManager()
+
+// AiSshConnect opens an SSH session. host is "host:port"; authType is
+// "password" | "key"; secret is the password or PEM private key. Returns the
+// session id, or an "err:"-prefixed message.
+func AiSshConnect(host, user, authType, secret string) string {
+	s, err := sshMgr.Connect(ai.SshAuth{Host: host, User: user, AuthType: authType, Secret: secret})
+	if err != nil {
+		return "err:" + err.Error()
+	}
+	return s.ID
+}
+
+// AiSshExec runs a command on an SSH session and returns combined output.
+func AiSshExec(id, cmd string) string {
+	s, ok := sshMgr.Get(id)
+	if !ok {
+		return "err: no such ssh session: " + id
+	}
+	out, err := s.Exec(cmd)
+	if err != nil {
+		return "err:" + err.Error()
+	}
+	return out
+}
+
+// AiSshList returns active SSH session ids as a JSON array.
+func AiSshList() string {
+	b, _ := json.Marshal(sshMgr.List())
+	return string(b)
+}
+
+// AiSshClose terminates an SSH session. Returns "1" on success, "0" otherwise.
+func AiSshClose(id string) string {
+	if sshMgr.Close(id) {
+		return "1"
+	}
+	return "0"
 }
 
 // AIBrowserPending returns the next pending browser command as JSON, or "".

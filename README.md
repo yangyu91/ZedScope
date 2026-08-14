@@ -2,7 +2,7 @@
 
 > 内置抓包调试的轻量安卓 **AI 浏览器**。主用途是**浏览器**，顺手把流量抓下来、能改包、能一键复制 Token；并内置一个**免费的 AI 中转站**，让 AI 直接分析抓包、甚至自己操作浏览器——全程流量可走代理，安全可审计。
 
-- 内核：**纯 Go 标准库**实现的 MITM 代理 + AI 中转站 + 多协议代理（HTTP/HTTPS 拦截、改包、Token 提取、OpenAI 兼容中继、DeepSeek 网页白嫖桥、Agent 工具循环、vmess/vless/trojan/ss 解析），零外部依赖，可交叉编译到 `android/arm64`。
+- 内核：**Go 标准库为主**实现的 MITM 代理 + AI 中转站 + 多协议代理（HTTP/HTTPS 拦截、改包、Token 提取、OpenAI 兼容中继、DeepSeek 网页白嫖桥、Agent 工具循环、vmess/vless/trojan/ss 解析），可交叉编译到 `android/arm64`。**唯一外部依赖是 `golang.org/x/crypto/ssh`**（SSH 会话类型用，见下），其余零外部依赖。
 - 外壳：**Kotlin + Android WebView**，UI 采用 **Material You 动态取色（Material 3 Dynamic Colors）**，中性暗底 + 大圆角的 sukisu 设计语言（Android 12+ 取色跟随壁纸，旧版本回退紫）。
 - 集成方式：Go 内核经 `gomobile bind` 编成 `yami.aar`，由安卓端直接调用。
 
@@ -57,6 +57,7 @@ export GH_TOKEN=ghp_你的令牌        # 需要 repo 权限
 | **Agent 任务编排** | 借鉴 Coomi-Android：工具调用循环 + 离线任务规划（计划→执行→校验）+ 动作单一来源，未知动作安全兜底不 panic |
 | **会话导出 / 导入** | 单会话导出为 JSON（备份 / 跨端迁移），可再导入；落盘 JSONL 持久化 |
 | **多协议代理增强** | 借鉴 v2ray/xray-core：vmess/vless/trojan/ss/socks5/socks5 分享链接解析为 xray outbound（独立 `proto` 子包，全单测） |
+| **SSH 会话类型** | 新增第四种会话：在 AI 面板里填 `host:port` / 用户名 / 密码或私钥，一键建连；命令走底部输入框、结果回写 AI 输出区。后端 `golang.org/x/crypto/ssh` 实现（密码 / 私钥两种认证、`InsecureIgnoreHostKey`、10s 超时、stdout+stderr 合并、非零退出也返回输出），`go/ai/ssh.go` 全单测（4 用例绿） |
 
 ---
 
@@ -76,7 +77,9 @@ export GH_TOKEN=ghp_你的令牌        # 需要 repo 权限
    │                  │        │    └─ 默认纯净过滤 (localhost/AI/中转)
    │                  │        └─ AI Relay (OpenAI兼容 / 多Provider / 故障转移)
    │                  │             ├─ DeepSeek 网页白嫖桥 (复用 cookie)
-   │                  │             └─ Agent 循环 (navigate/click/type/extract/analyze)
+   │                  │             ├─ Agent 循环 (navigate/click/type/extract/analyze)
+   │                  │             └─ SSH 会话 (golang.org/x/crypto/ssh: 密码/私钥/10s超时/合并输出)
+   │                  │                  └─ 安卓端 AI 面板建连 + 命令回写输出区
    │                  └──────────────┘ 命令结果回传
    └─ (可选) VpnService ── 全部 App 流量 → local MITM (Demo, 默认关)
 ```
@@ -167,8 +170,29 @@ curl -X POST http://127.0.0.1:8910/ai/analyze \
   -H 'content-type: application/json' \
   -d '{"capture_id":"1","prompt":"这请求泄露了 token 吗？给个 curl"}'
 ```
-> Go 内核的全部能力（`go/ai`、`go/proxy` 的多协议解析、Agent 循环）已通过 `go test` 与
+> Go 内核的全部能力（`go/ai`、`go/proxy` 的多协议解析、Agent 循环、SSH 会话）已通过 `go test` 与
 > `GOOS=android GOARCH=arm64` 交叉编译验证。详见 [docs/AI-ARCHITECTURE.md](docs/AI-ARCHITECTURE.md)。
+
+### 构建排错（APK 打不开 / 构建失败怎么办）
+
+下面这些是**真实踩过的坑**，任何一条没满足都会让 `Build APK` 在编译期挂掉、产物装不上（"打都打不开"）。改完文件后对照自查：
+
+| # | 症状 / 坑 | 正确做法 |
+|---|-----------|----------|
+| 1 | gomobile 导出名全大写（`CAPEM`）→ Java 端变成 `capem`，Kotlin 调 `Yami.caPEM()` 直接编译错 | 导出函数用**驼峰** `CaPEM` → Java `caPEM`。**不要**改回全大写 |
+| 2 | `YamiCore.setBodyDir` 缺失，MainActivity 调用无定义 | `YamiCore.kt` 必须有 `fun setBodyDir(dir): Boolean` 包装 `Yami.setBodyDir` |
+| 3 | `gomobile` 不在 `go.mod` 依赖图 → `gomobile bind` 报找不到 | workflow 里必须 `go get golang.org/x/mobile@latest`（**不能 `go mod tidy`**，会把它清掉）|
+| 4 | `mkdir -p ../android/app/libs` 漏了 → aar 没地方放 | bind 步骤前先建 `android/app/libs` 目录 |
+| 5 | `android.net.ProxyConfig` → AndroidX WebView 无此类，启动崩 | 改用 `androidx.webkit.ProxyConfig`，并 `import androidx.webkit.ProxyConfig` |
+| 6 | `Widget.Material3.TextInputEditText` 裸名不存在 → 样式解析失败 | 必须带后缀 `.FilledBox`（即 `Widget.Material3.TextInputEditText.FilledBox`）|
+| 7 | `themes.xml` 里自定义 `colorBackground` 属性 → Material3 无此属性 | 删掉 `colorBackground` / `android:colorBackground`；布局改用 `?attr/colorSurface` |
+| 8 | VPN `addDisallowedApplication` 不在 `VpnService.Builder` 上 | 必须 `builder.addDisallowedApplication(packageName)` |
+| 9 | `establish()` 返回值当 `fileDescriptor` 用 → 类型错 | `fd = established.fileDescriptor`，转发器传 `established.fileDescriptor` |
+| 10 | `sendTcp(..., ack = true, ...)` 参数名错 → 编译错 | 定义是 `sendTcp(conn, seq, ack, syn, ackF, fin, payload)`，用 `ackF = true` |
+| 11 | `go get golang.org/x/crypto@latest` 把 `go.mod` 升到 go 1.25，CI 工具链不够 → `toolchain not available` | **pin** `golang.org/x/crypto v0.31.0` + `go 1.22`（兼容 CI 的 go 1.22）；本地用缓存的 `go1.25.13` 工具链验证（`GOTOOLCHAIN=go1.25.13`）|
+| 12 | 空仓库首次 push 409 | `push.sh` 已处理；本地用 `git` 初始化提交后再推 |
+
+> **防回归红线**：CI 用 go 1.22，`go.mod` 的 `go` 指令**必须 ≤ 1.22** 且 `crypto` 必须 pin 在 `v0.31.0`。任何把 `go get x/crypto@latest` 或 `go mod tidy` 跑进提交的动作都会再次触发 #11。
 
 ---
 
@@ -181,6 +205,7 @@ curl -X POST http://127.0.0.1:8910/ai/analyze \
 3. 切回浏览器，正常上网。默认就是**干净捕获**：代理池 / AI / 中转流量不会污染列表，需要看全部就关掉「纯净捕获」开关。
 4. 底部「抓包」看请求；「Token」看提取到的凭据，点「一键复制全部 Token」。
 5. AI 面板：填真实密钥会自动开「省 token 模式」；点「新建会话」开新对话，Agent 自动操作浏览器也走同一套压缩。
+   - **SSH 会话**：AI 面板底部「SSH」卡片，填 `host:port`（默认 `127.0.0.1:22`）/ 用户名（默认 `root`）/ 密码或私钥（开「密钥模式」开关即走私钥），点「连接」；底部输入框敲命令、点「执行」，结果回写到 AI 输出区。后端 `golang.org/x/crypto/ssh`，密码/私钥两种认证。
 6. （可选）设置里打开「全局抓包」开关 → 授权 VPN → 劫持**全部 App** 流量（Demo 功能，默认关）。
 7. 在「设置」里可配置改包规则（JSON 数组，见 `docs/ARCHITECTURE.md`）。
 
@@ -201,7 +226,7 @@ v1 已修复并默认关闭/移除以下限制，保留说明供对照：
 仍需注意：
 
 - 「全局抓包」为 **Demo 级实现**，TUN 封包解析 / DNS 转发 / NAT 拼接已在代码中完成，但**需在真机验证**（沙箱无安卓设备），稳定性以真机为准。
-- Go 内核纯标准库，无原生依赖；`yami.aar` 通过 `gomobile bind` 生成，已 `GOOS=android GOARCH=arm64` 交叉编译通过；`go/ai` 的省 token 与多协议解析单测全绿。
+- Go 内核以标准库为主；**唯一外部依赖 `golang.org/x/crypto/ssh`**（SSH 会话类型用，已 pin `v0.31.0` 兼容 CI 的 go 1.22），无原生 CGO 依赖。`yami.aar` 通过 `gomobile bind` 生成，已 `GOOS=android GOARCH=arm64` 交叉编译通过；`go/ai` 的省 token、多协议解析、SSH 会话单测全绿。
 - 安卓 APK 需在**本机或 CI（GitHub Actions）** 出包（沙箱无 Android SDK）；Go 内核与单测可在沙箱直接跑。
 
 ---
@@ -218,6 +243,7 @@ v1 已修复并默认关闭/移除以下限制，保留说明供对照：
 | Agent 任务编排 | ✅ 本轮完成 | 借鉴 Coomi-Android：规划循环 + 动作单一来源 |
 | 会话导出/导入 + 持久化 | ✅ 本轮完成 | JSON 往返 + JSONL 落盘 |
 | 多协议代理增强 | ✅ 本轮完成 | 借鉴 v2ray/xray-core：独立 `proto` 子包全单测 |
+| SSH 会话类型 | ✅ 本轮完成 | `golang.org/x/crypto/ssh`：密码/私钥认证、AI 面板建连 + 命令回写；首个非标准库依赖 |
 | **真·窗口化 WM** | 🔜 下一块 | 浏览器 / 聊天都是独立**悬浮窗口**，dock + 窗口总览（一键预览所有窗口）；AI 在浏览器内做独立**悬浮窗**，点一下即发指令开干，免去来回切会话 |
 | **UI 可定制（落地中）** | 🟡 雏形已出 | 顶栏 / 主窗口 / 浏览器 / 抓包等 UI 可由 `ui.json` 配置（JSON + HTML/CSS 双格式，可读可改）；原生侧 `yamiUi` 读写桥待 MainActivity 接入 |
 

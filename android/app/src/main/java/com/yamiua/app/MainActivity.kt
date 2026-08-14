@@ -28,6 +28,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.materialswitch.MaterialSwitch
 import androidx.core.content.FileProvider
+import androidx.webkit.ProxyConfig
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -158,12 +159,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyWebViewProxy() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val config = android.net.ProxyConfig.Builder()
-                .addProxyRule(YamiCore.proxyAddr())
-                .build()
-            val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
-            android.webkit.ProxyController.getInstance()
-                .setProxyOverride(config, executor, java.lang.Runnable { })
+            try {
+                val config = ProxyConfig.Builder()
+                    .addProxyRule(YamiCore.proxyAddr())
+                    .build()
+                val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+                android.webkit.ProxyController.getInstance()
+                    .setProxyOverride(config, executor, java.lang.Runnable { })
+            } catch (e: Throwable) {
+                // Proxy override is best-effort; never let it crash startup.
+                e.printStackTrace()
+            }
         } else {
             Toast.makeText(this, "代理拦截需要 Android 10+", Toast.LENGTH_LONG).show()
         }
@@ -350,6 +356,44 @@ class MainActivity : AppCompatActivity() {
                 val r = YamiCore.aiAgentRunSession(currentSessionId, task)
                 runOnUiThread {
                     out.text = "Agent：$task\n\n$r"
+                    aiScroll.post { aiScroll.scrollTo(0, out.bottom) }
+                }
+            }.start()
+        }
+
+        // ---- SSH 会话类型：连接远程主机并在其上执行命令 ----
+        val etSshHost = findViewById<EditText>(R.id.etSshHost)
+        val etSshUser = findViewById<EditText>(R.id.etSshUser)
+        val etSshSecret = findViewById<EditText>(R.id.etSshSecret)
+        val switchSshKey = findViewById<MaterialSwitch>(R.id.switchSshKey)
+        val tvSshStatus = findViewById<TextView>(R.id.tvSshStatus)
+        var sshId = ""
+        findViewById<View>(R.id.btnSshConnect).setOnClickListener {
+            val host = etSshHost.text.toString().ifBlank { "127.0.0.1:22" }
+            val user = etSshUser.text.toString().ifBlank { "root" }
+            val auth = if (switchSshKey.isChecked) "key" else "password"
+            val secret = etSshSecret.text.toString()
+            Thread {
+                val id = YamiCore.aiSshConnect(host, user, auth, secret)
+                runOnUiThread {
+                    if (id.startsWith("err:")) {
+                        tvSshStatus.text = id
+                        sshId = ""
+                    } else {
+                        sshId = id
+                        tvSshStatus.text = getString(R.string.ssh_connected, id)
+                    }
+                }
+            }.start()
+        }
+        findViewById<View>(R.id.btnSshExec).setOnClickListener {
+            val cmd = etInput.text.toString().trim()
+            if (cmd.isBlank()) return@setOnClickListener
+            if (sshId.isBlank()) { tvSshStatus.text = "请先连接 SSH"; return@setOnClickListener }
+            Thread {
+                val r = YamiCore.aiSshExec(sshId, cmd)
+                runOnUiThread {
+                    out.text = "SSH $sshId \$ $cmd\n$r"
                     aiScroll.post { aiScroll.scrollTo(0, out.bottom) }
                 }
             }.start()

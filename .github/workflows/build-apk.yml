@@ -44,6 +44,14 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.2.9519653
         run: |
           cd go
+          # golang.org/x/mobile must be in the module dependency graph for
+          # `gomobile bind` to resolve it. Do NOT `go mod tidy` — tidy removes
+          # x/mobile because no .go file imports it (it is only a build tool),
+          # which surfaces as "not in the module dependency graph".
+          go get golang.org/x/mobile@latest
+          # The bind output dir must exist, or gomobile errors with
+          # "open ../android/app/libs/yami.aar: no such file or directory".
+          mkdir -p ../android/app/libs
           gomobile bind -target=android -androidapi 24 -o ../android/app/libs/yami.aar ./yami
 
       - name: Set up Gradle 8.9

@@ -84,6 +84,11 @@ object YamiCore {
         try { Yami.clear() } catch (_: Throwable) {}
     }
 
+    // Override where large captured bodies are spilled to disk. Required by
+    // MainActivity.onCreate; if missing the Kotlin build fails
+    // (Unresolved reference: setBodyDir) and no APK is produced.
+    fun setBodyDir(dir: String): Boolean = try { Yami.setBodyDir(dir) == "ok" } catch (e: Throwable) { false }
+
     // Toggle the default clean-capture filter (hides yami's own / AI / relay traffic).
     fun setCleanCapture(on: Boolean): Boolean = try {
         Yami.setCleanCapture(on) == "ok"
@@ -168,4 +173,20 @@ object YamiCore {
     fun aibrowserComplete(id: String, result: String) {
         try { Yami.aiBrowserComplete(id, result) } catch (_: Throwable) {}
     }
+
+    // ---------------- SSH session type ----------------
+    /** Open an SSH session. authType: "password" | "key"; secret is the
+     *  password or PEM private key. Returns the session id or "err:...". */
+    fun aiSshConnect(host: String, user: String, authType: String, secret: String): String =
+        try { Yami.aiSshConnect(host, user, authType, secret) } catch (e: Throwable) { "err: ${e.message}" }
+
+    /** Run a command on an SSH session; returns combined output or "err:...". */
+    fun aiSshExec(id: String, cmd: String): String =
+        try { Yami.aiSshExec(id, cmd) } catch (e: Throwable) { "err: ${e.message}" }
+
+    /** List active SSH session ids as a JSON array. */
+    fun aiSshList(): String = try { Yami.aiSshList() } catch (e: Throwable) { "[]" }
+
+    /** Close an SSH session; returns true on success. */
+    fun aiSshClose(id: String): Boolean = try { Yami.aiSshClose(id) == "1" } catch (e: Throwable) { false }
 }

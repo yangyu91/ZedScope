@@ -97,4 +97,16 @@
     <string name="ui_custom_desc">在起始页点右上角「界面定制」可调强调色、圆角、间距密度与各 UI 区块的显示，配置按 ui.json 结构保存。</string>
     <string name="ui_custom_path">assets/ui.json · assets/ui.schema.json</string>
     <string name="ui_custom_saved">界面配置已保存</string>
+
+    <!-- SSH 会话类型 -->
+    <string name="ssh_title">SSH 会话</string>
+    <string name="ssh_host">主机 (host:port)</string>
+    <string name="ssh_user">用户名</string>
+    <string name="ssh_secret">密码 / PEM 私钥</string>
+    <string name="ssh_key_mode">用密钥登录</string>
+    <string name="ssh_connect">连接 SSH</string>
+    <string name="ssh_exec">在 SSH 执行</string>
+    <string name="ssh_status">未连接</string>
+    <string name="ssh_connected">已连接：%1$s</string>
+    <string name="ssh_exec_hint">命令用底部输入框，点「在 SSH 执行」即可在远程运行</string>
 </resources>

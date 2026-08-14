@@ -119,7 +119,7 @@ class VpnForwarder(
             if (conn == null) return
             conns[key] = conn
             // SYN-ACK: seq = our ISN (serverSeq - 1), ack = client seq + 1
-            sendTcp(conn, (conn.serverSeq - 1) and 0xffffffffL, seq + 1, syn = true, ack = true, payload = ByteArray(0))
+            sendTcp(conn, (conn.serverSeq - 1) and 0xffffffffL, seq + 1, syn = true, ackF = true, payload = ByteArray(0))
             return
         }
         if (conn == null) return
@@ -127,7 +127,7 @@ class VpnForwarder(
         conn.clientSeq = seq + payload.size
         if (fin) {
             conn.clientSeq += 1
-            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ack = true, fin = true, payload = ByteArray(0))
+            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, fin = true, payload = ByteArray(0))
             conn.close()
             conns.remove(key)
             return
@@ -135,7 +135,7 @@ class VpnForwarder(
         if (payload.isNotEmpty()) {
             conn.queue.add(payload)
             // ACK the data we just received
-            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ack = true, payload = ByteArray(0))
+            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, payload = ByteArray(0))
             pumpToProxy(conn)
         } else if (ackF) {
             // pure ACK
@@ -178,7 +178,7 @@ class VpnForwarder(
                         var off = 0
                         while (off < r) {
                             val seg = kotlin.math.min(1460, r - off)
-                            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ack = true,
+                            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true,
                                 payload = buf.copyOfRange(off, off + seg))
                             conn.serverSeq = (conn.serverSeq + seg) and 0xffffffffL
                             off += seg
@@ -188,7 +188,7 @@ class VpnForwarder(
                 }
                 // proxy closed -> FIN to app
                 try {
-                    sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ack = true, fin = true, payload = ByteArray(0))
+                    sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, fin = true, payload = ByteArray(0))
                 } catch (_: Exception) {
                 }
             }
