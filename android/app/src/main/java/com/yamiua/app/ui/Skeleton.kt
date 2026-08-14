@@ -42,8 +42,8 @@ class SkeletonView @JvmOverloads constructor(
         interpolator = LinearInterpolator()
         repeatCount = ValueAnimator.INFINITE
         repeatMode = ValueAnimator.RESTART
-        addUpdateListener { v ->
-            progress = v.animatedValue as Float
+        addUpdateListener {
+            progress = (it?.animatedValue as? Float) ?: 0f
             invalidate()
         }
     }
@@ -130,7 +130,7 @@ class TypingDots @JvmOverloads constructor(
                 repeatCount = ValueAnimator.INFINITE
                 repeatMode = ValueAnimator.REVERSE
                 startDelay = i * 140L
-                addUpdateListener { v.alpha = it.animatedValue as Float }
+                addUpdateListener { v.alpha = (it?.animatedValue as? Float) ?: 1f }
             }
             a.start()
             animators.add(a)
