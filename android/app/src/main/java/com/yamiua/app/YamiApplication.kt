@@ -23,17 +23,23 @@ class YamiApplication : Application() {
     }
 
     /**
-     * 反射调用 gomobile 生成的 Yami.init(Context)：Go runtime 在 Android 上最早、
-     * 最安全的初始化点。反射方式避免对生成方法签名/存在性的编译期依赖——
-     * 若存在则正确初始化，若不存在则静默跳过，回退到 gomobile 的自动 init。
+     * gomobile 要求在最早、最安全的时机（Application.onCreate，早于任何 Activity）
+     * 用 Application Context 初始化 Go runtime：Yami.init(Context)。
+     *
+     * 缺这一步，首次调用 Yami.* 触发 .so 加载与 Go runtime 初始化时，会在部分
+     * Android 版本/ROM 上 native 崩溃（SIGSEGV / SIGABRT）—— 表现为"点开就闪退"，
+     * 且被 Kotlin try/catch 完全拦不住。
+     *
+     * 直接用 gomobile 生成的稳定 API Yami.init(applicationContext)，不再走反射静默
+     * 兜底：若绑定未提供该方法，构建期就会失败（CI 红灯），而不是运行时悄悄不初始化
+     * 导致闪退。极端情况下若 init 抛异常，仍打日志并回退到 gomobile 自动懒初始化。
      */
     private fun initGoRuntime() {
         try {
-            val m = Yami::class.java.getMethod("init", Context::class.java)
-            m.invoke(null, applicationContext)
+            Yami.init(applicationContext)
             Log.i("Yami", "Yami.init() ok")
         } catch (e: Throwable) {
-            Log.e("Yami", "Yami.init unavailable, relying on gomobile auto-init", e)
+            Log.e("Yami", "Yami.init failed, relying on gomobile auto-init", e)
         }
     }
 

@@ -110,11 +110,17 @@ class MainActivity : AppCompatActivity() {
         setupPanels()
         setupSettings()
 
-        if (YamiCore.start()) {
+        val startRes = YamiCore.start()
+        if (startRes == "ok") {
             YamiCore.setBodyDir(cacheDir.absolutePath + "/yami-bodies")
             YamiCore.setCleanCapture(true) // clean capture ON by default
             applyWebViewProxy()
             Toast.makeText(this, R.string.toast_proxy_started, Toast.LENGTH_SHORT).show()
+        } else {
+            // 引擎启动失败（端口占用/Go 侧错误等）：直接暴露原因，而不是静默继续，
+            // 方便用户反馈。注意 Go panic 走 SIGABRT 时 Kotlin 抓不到，会表现为闪退，
+            // 那种情况需要 adb logcat 才能定位（见仓库 README 排错表）。
+            Toast.makeText(this, "引擎启动失败：$startRes", Toast.LENGTH_LONG).show()
         }
 
         if (YamiCore.aiStart()) {

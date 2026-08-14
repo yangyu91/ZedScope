@@ -51,12 +51,13 @@ object YamiCore {
     fun apiAddr() = API_ADDR
     fun aiAddr() = AI_ADDR
 
-    fun start(): Boolean {
+    /** 启动代理+API。返回 "ok" 或 "err: ..."（含 Go 侧错误），便于 UI 直接展示。 */
+    fun start(): String {
         return try {
-            Yami.start(PROXY_ADDR, API_ADDR) == "ok"
+            Yami.start(PROXY_ADDR, API_ADDR)
         } catch (e: Throwable) {
             e.printStackTrace()
-            false
+            "err: ${e.message}"
         }
     }
 
