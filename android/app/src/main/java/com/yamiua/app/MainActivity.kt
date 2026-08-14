@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var etUrl: EditText
+    private lateinit var etInput: EditText   // AI 输入：setupAiPanel 赋值，runAgentTask 等成员函数也用
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var flBrowser: android.widget.FrameLayout
     private lateinit var flCapture: android.widget.FrameLayout
@@ -323,7 +324,7 @@ class MainActivity : AppCompatActivity() {
         val base = findViewById<EditText>(R.id.etProviderBase)
         val key = findViewById<EditText>(R.id.etProviderKey)
         val model = findViewById<EditText>(R.id.etProviderModel)
-        val etInput = findViewById<EditText>(R.id.etAiInput)
+        etInput = findViewById(R.id.etAiInput)
         val switchCompact = findViewById<MaterialSwitch>(R.id.switchCompact)
         val etRatio = findViewById<EditText>(R.id.etCompactRatio)
         val tvSession = findViewById<TextView>(R.id.tvSession)
