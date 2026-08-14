@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         setTheme(R.style.Theme_Yami)   // swap splash theme back to the app theme
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        boot("setContentView")
 
         maybeShowLastCrash()
 
@@ -111,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         setupSettings()
 
         val startRes = YamiCore.start()
+        boot("YamiCore.start=$startRes")
         if (startRes == "ok") {
             YamiCore.setBodyDir(cacheDir.absolutePath + "/yami-bodies")
             YamiCore.setCleanCapture(true) // clean capture ON by default
@@ -126,10 +128,14 @@ class MainActivity : AppCompatActivity() {
         if (YamiCore.aiStart()) {
             aiBridge = AiBridge(webView)
             aiBridge.start()
+            boot("aiStart=ok")
+        } else {
+            boot("aiStart=failed")
         }
 
         setupAiPanel()
         loadHome()
+        boot("UI ready")
     }
 
     /**
@@ -141,8 +147,27 @@ class MainActivity : AppCompatActivity() {
         try {
             val f = File(cacheDir, "crash.log")
             if (f.exists() && f.length() > 0) {
-                Toast.makeText(this, "检测到上次崩溃日志(crash.log)，请反馈以便定位", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "检测到上次 Kotlin 崩溃日志(crash.log)，请反馈以便定位", Toast.LENGTH_LONG).show()
+                return
             }
+            // 没有 Kotlin 崩溃日志，但启动轨迹若未到达"UI ready"，说明上次在更早阶段
+            // 就 native 崩了（Go panic->SIGABRT，Kotlin 抓不到）。把最后到达的阶段回显，
+            // 用户无需 adb 即可把这段信息反馈过来定位。
+            val boot = File(cacheDir, "boot.log")
+            if (boot.exists() && boot.length() > 0) {
+                val last = boot.readLines().filter { it.isNotBlank() }.lastOrNull() ?: ""
+                if (!last.contains("UI ready")) {
+                    Toast.makeText(this, "上次启动止于：$last（native 崩溃？请反馈此信息）", Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** 写一行启动轨迹到 cacheDir/boot.log（每次落盘，闪退前最后一行即死因线索）。 */
+    private fun boot(stage: String) {
+        try {
+            File(cacheDir, "boot.log").appendText("${System.currentTimeMillis()} $stage\n")
         } catch (_: Throwable) {
         }
     }
