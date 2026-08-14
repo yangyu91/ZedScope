@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -92,3 +92,18 @@ jobs:
           name: yami-UA-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      # Publish the built APK to a stable, public GitHub Release so it can be
+      # downloaded directly (release assets are served from GitHub's CDN, which
+      # is reachable even from restricted networks). The `latest` tag is
+      # overwritten on every successful build.
+      - name: Publish APK to GitHub Release (stable download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: yami-UA latest build
+          files: android/app/build/outputs/apk/release/*.apk
+          prerelease: false
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
