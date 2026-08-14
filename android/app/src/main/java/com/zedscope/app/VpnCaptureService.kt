@@ -1,4 +1,4 @@
-package com.yamiua.app
+package com.zedscope.app
 
 import android.content.Intent
 import android.net.VpnService
@@ -27,7 +27,7 @@ class VpnCaptureService : VpnService() {
         val port = proxy.substringAfter(":").toIntOrNull() ?: 8899
 
         val builder = Builder()
-            .setSession("yami-UA 全局抓包")
+            .setSession("ZedScope 全局抓包")
             .addAddress("10.0.0.2", 24)
             .addRoute("0.0.0.0", 0)
             .addDnsServer("10.0.0.1")

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>界面定制 · yami-UA</title>
+<title>界面定制 · ZedScope</title>
 <link rel="stylesheet" href="ui-tokens.css">
 <style>
   .top { display:flex; align-items:center; gap:var(--s-md); margin-bottom:var(--s-lg) }
@@ -119,7 +119,7 @@
     <div class="opt">
       <div class="txt">
         <div class="t">强调色 accent</div>
-        <div class="d">sukisu 暗绿默认 #6EDB8F；派生的柔和绿/文字色自动算出</div>
+        <div class="d">暖琥珀默认 #D9A45B；派生的柔和琥珀/文字色自动算出</div>
       </div>
       <input type="color" id="accent">
     </div>
@@ -245,7 +245,7 @@
       ["bottomNav", "底部导航", [["visible", "整块显示", 0], ["labels", "显示文字", 0]]]
     ];
 
-    var PRESETS = ["#6EDB8F", "#3FBF74", "#6CC6FF", "#FFC857", "#FF8A8A", "#B69DFF"];
+    var PRESETS = ["#D9A45B", "#6EDB8F", "#3FBF74", "#6CC6FF", "#FFC857", "#FF8A8A", "#B69DFF"];
 
     var cfg = YamiUI.defaults();
     var $ = function (id) { return document.getElementById(id); };
@@ -346,8 +346,8 @@
     }
 
     function syncForm() {
-      $("accent").value = cfg.theme.accent || "#6EDB8F";
-      $("radius").value = cfg.theme.radius == null ? 22 : cfg.theme.radius;
+      $("accent").value = cfg.theme.accent || "#D9A45B";
+      $("radius").value = cfg.theme.radius == null ? 14 : cfg.theme.radius;
       $("radiusVal").textContent = $("radius").value;
       $("density").value = cfg.theme.density || "normal";
       $("motion").checked = cfg.theme.motion !== false;

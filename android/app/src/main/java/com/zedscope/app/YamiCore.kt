@@ -1,4 +1,4 @@
-package com.yamiua.app
+package com.zedscope.app
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken

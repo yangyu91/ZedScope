@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  yami-UA main shell — SukiSU-style neutral dark + green accent.
+  ZedScope main shell — Claude-style warm-neutral dark + amber accent.
   Product shape (borrowed from 嗅觉浏览器/youtoo): the browser is the primary
   surface, the network log (capture) is one tap away and always shows live
   counters, so debugging never leaves the browsing flow.

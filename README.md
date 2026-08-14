@@ -1,4 +1,4 @@
-# yami-UA
+# ZedScope
 
 > 内置抓包调试的轻量安卓 **AI 浏览器**。主用途是**浏览器**，顺手把流量抓下来、能改包、能一键复制 Token；并内置一个**免费的 AI 中转站**，让 AI 直接分析抓包、甚至自己操作浏览器——全程流量可走代理，安全可审计。
 
@@ -15,13 +15,13 @@
 你不需要本机装任何安卓工具——仓库推上去后，GitHub 云端会自动把好东西编译成 APK。
 
 ```bash
-cd yami-UA
+cd ZedScope
 export GH_TOKEN=ghp_你的令牌        # 需要 repo 权限
-./push.sh                            # 建仓库 yami-UA + 推源码（自动触发构建）
+./push.sh                            # 建仓库 ZedScope + 推源码（自动触发构建）
 ```
 
 跑完打开 `https://github.com/<你的用户名>/yami-UA/actions` → 等 `Build APK` 跑完 →
-下载 **yami-UA-apk** 产物 → 安装即可。
+下载 **ZedScope-apk** 产物 → 安装即可。
 
 > 想在本机编译？见下方「本机构建」。`push.sh` 只把仓库推到 GitHub，令牌仅从环境变量读取、绝不写入仓库。
 

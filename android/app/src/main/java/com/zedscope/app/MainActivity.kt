@@ -1,4 +1,4 @@
-package com.yamiua.app
+package com.zedscope.app
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rvChat: RecyclerView
     private lateinit var tvChatEmpty: TextView
     private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
-    private lateinit var typingDots: com.yamiua.app.ui.TypingDots
+    private lateinit var typingDots: com.zedscope.app.ui.TypingDots
     private val chatHandler = Handler(Looper.getMainLooper())
 
     // v2 DEMO: VPN permission launcher for global (all-app) capture.
@@ -658,7 +658,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val dir = File(getExternalFilesDir(null), "certs")
             dir.mkdirs()
-            val file = File(dir, "yami-UA-CA.crt")
+            val file = File(dir, "ZedScope-CA.crt")
             file.writeText(pem)
             val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
             val view = Intent(Intent.ACTION_VIEW)
@@ -708,78 +708,3 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-/** Card-style adapter for captured requests. */
-class CaptureAdapter : RecyclerView.Adapter<CaptureAdapter.VH>() {
-    private var items: List<Record> = emptyList()
-    fun setItems(list: List<Record>) { items = list; notifyDataSetChanged() }
-
-    class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvMethod: TextView = view.findViewById(R.id.tvMethod)
-        val tvStatus: TextView = view.findViewById(R.id.tvStatus)
-        val tvScheme: TextView = view.findViewById(R.id.tvScheme)
-        val tvUrl: TextView = view.findViewById(R.id.tvUrl)
-        val tvMeta: TextView = view.findViewById(R.id.tvMeta)
-        val dotLogin: View = view.findViewById(R.id.dotLogin)
-    }
-
-    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_capture, parent, false)
-        return VH(v)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val r = items[position]
-        holder.tvMethod.text = r.method
-        holder.tvStatus.text = r.status_code.toString()
-        holder.tvScheme.text = if (r.is_https) "HTTPS" else "HTTP"
-        holder.tvUrl.text = r.url
-        holder.tvMeta.text = "${r.host} · token ${r.tokens.size}"
-        holder.dotLogin.visibility = if (r.is_login) View.VISIBLE else View.GONE
-        holder.itemView.setOnClickListener {
-            val detail = buildString {
-                append("${r.method} ${r.url}\n")
-                append("status: ${r.status_code}\n")
-                append("tokens: ${r.tokens.size}\n")
-                r.tokens.forEach { append("  ${it.key} = ${it.value}\n") }
-            }
-            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("yami-request", detail))
-            Toast.makeText(holder.itemView.context, "已复制请求详情", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun getItemCount() = items.size
-}
-
-/** Card-style adapter for extracted tokens. */
-class TokenAdapter : RecyclerView.Adapter<TokenAdapter.VH>() {
-    private var items: List<Token> = emptyList()
-    fun setItems(list: List<Token>) { items = list; notifyDataSetChanged() }
-
-    class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvKey: TextView = view.findViewById(R.id.tvKey)
-        val tvSource: TextView = view.findViewById(R.id.tvSource)
-        val tvValue: TextView = view.findViewById(R.id.tvValue)
-        val tvLoginFlag: TextView = view.findViewById(R.id.tvLoginFlag)
-    }
-
-    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_token, parent, false)
-        return VH(v)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val t = items[position]
-        holder.tvKey.text = t.key
-        holder.tvSource.text = t.source
-        holder.tvValue.text = t.value
-        holder.tvLoginFlag.visibility = if (t.is_login) View.VISIBLE else View.GONE
-        holder.itemView.setOnClickListener {
-            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText(t.key, t.value))
-            Toast.makeText(holder.itemView.context, "已复制 ${t.key}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun getItemCount() = items.size
-}

@@ -8,32 +8,32 @@
     android:paddingEnd="@dimen/yami_list_padding"
     android:paddingTop="@dimen/yami_space_xs">
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="140dp"
         android:layout_height="16dp"
         android:layout_marginBottom="@dimen/yami_space_sm" />
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:layout_marginBottom="@dimen/yami_space_lg" />
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="120dp"
         android:layout_height="16dp"
         android:layout_marginBottom="@dimen/yami_space_sm" />
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:layout_marginBottom="@dimen/yami_space_lg" />
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="160dp"
         android:layout_height="16dp"
         android:layout_marginBottom="@dimen/yami_space_sm" />
 
-    <com.yamiua.app.ui.SkeletonView
+    <com.zedscope.app.ui.SkeletonView
         android:layout_width="match_parent"
         android:layout_height="64dp" />
 </LinearLayout>

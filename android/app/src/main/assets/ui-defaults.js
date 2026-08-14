@@ -1,5 +1,5 @@
 /* =====================================================================
-   yami-UA · built-in fallback copy of assets/ui.json
+   ZedScope · built-in fallback copy of assets/ui.json
    ---------------------------------------------------------------------
    Why this file exists: pages loaded from file:///android_asset cannot
    fetch() a sibling JSON file (file:// is an opaque origin unless the app
@@ -10,17 +10,17 @@
    KEEP IN SYNC WITH ui.json (same shape, same defaults, same version).
    ui.json stays the canonical, human-editable file for the native side.
    ===================================================================== */
-window.YAMI_UI_DEFAULTS = {
+window.ZEDSCOPE_UI_DEFAULTS = {
   version: 1,
-  meta: { name: "yami-UA default", author: "UI 设计部", updatedAt: "" },
+  meta: { name: "ZedScope default", author: "UI 设计部", updatedAt: "" },
   theme: {
     mode: "dark",
     monet: false,
-    accent: "#6EDB8F",
-    accentDim: "#3FBF74",
-    background: "#0E0F11",
-    surface: "#15171A",
-    radius: 22,
+    accent: "#D9A45B",
+    accentDim: "#B9843F",
+    background: "#171513",
+    surface: "#1E1C19",
+    radius: 14,
     density: "normal",
     motion: true
   },

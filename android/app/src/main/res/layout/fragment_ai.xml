@@ -472,7 +472,7 @@
         android:visibility="gone" />
 
     <!-- AI "thinking" indicator: shown while a response streams in -->
-    <com.yamiua.app.ui.TypingDots
+    <com.zedscope.app.ui.TypingDots
         android:id="@+id/typingDots"
         android:layout_width="match_parent"
         android:layout_height="24dp"

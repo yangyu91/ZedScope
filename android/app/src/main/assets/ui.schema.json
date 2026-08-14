@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://yami-ua.local/ui.schema.json",
-  "title": "yami-UA UI 定制配置",
-  "description": "描述 yami-UA 各 UI 区块（顶栏 / 主窗口 / 浏览器 / 抓包 / Token / AI / 设置 / 底栏）的可见性与基础样式。x-scope 标注该字段当前由谁消费：webview = 起始页已实时生效；native = 原生侧预留，待 MainActivity 接入。",
+  "$id": "https://zedscope.local/ui.schema.json",
+  "title": "ZedScope UI 定制配置",
+  "description": "描述 ZedScope 各 UI 区块（顶栏 / 主窗口 / 浏览器 / 抓包 / Token / AI / 设置 / 底栏）的可见性与基础样式。x-scope 标注该字段当前由谁消费：webview = 起始页已实时生效；native = 原生侧预留，待 MainActivity 接入。",
   "type": "object",
   "required": ["version", "theme", "blocks"],
   "additionalProperties": false,
@@ -34,11 +34,11 @@
       "properties": {
         "mode":       { "enum": ["dark", "light", "system"], "default": "dark", "x-scope": "native" },
         "monet":      { "type": "boolean", "default": false, "description": "true = 跟随壁纸动态取色（Material You / SukiSU MONET），忽略下面的 accent", "x-scope": "native" },
-        "accent":     { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#6EDB8F", "x-scope": "webview+native" },
-        "accentDim":  { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#3FBF74", "x-scope": "webview+native" },
-        "background": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#0E0F11", "x-scope": "webview+native" },
-        "surface":    { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#15171A", "x-scope": "webview+native" },
-        "radius":     { "type": "integer", "minimum": 0, "maximum": 32, "default": 22, "description": "卡片圆角 dp/px", "x-scope": "webview+native" },
+        "accent":     { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#D9A45B", "x-scope": "webview+native" },
+        "accentDim":  { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#B9843F", "x-scope": "webview+native" },
+        "background": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#171513", "x-scope": "webview+native" },
+        "surface":    { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "default": "#1E1C19", "x-scope": "webview+native" },
+        "radius":     { "type": "integer", "minimum": 0, "maximum": 32, "default": 14, "description": "卡片圆角 dp/px", "x-scope": "webview+native" },
         "density":    { "enum": ["compact", "normal", "comfortable"], "default": "normal", "description": "间距缩放：3px / 4px / 5px 基准单位", "x-scope": "webview+native" },
         "motion":     { "type": "boolean", "default": true, "description": "false = 关闭过渡与波纹动效（省电 / 无障碍）", "x-scope": "webview+native" }
       }

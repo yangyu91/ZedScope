@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <!-- App-private external files (where we drop yami-UA-CA.crt for install) -->
+    <!-- App-private external files (where we drop ZedScope-CA.crt for install) -->
     <external-files-path name="yami_files" path="." />
     <!-- Public Downloads directory (manual-install fallback path shown to user) -->
     <external-path name="downloads" path="Download" />

@@ -1,4 +1,4 @@
-package com.yamiua.app.ui
+package com.zedscope.app.ui
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -13,7 +13,7 @@ import android.view.ViewOutlineProvider
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import androidx.core.content.ContextCompat
-import com.yamiua.app.R
+import com.zedscope.app.R
 
 /**
  * A single, self-contained shimmer placeholder block (no external library).

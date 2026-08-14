@@ -14,7 +14,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:label="yami-UA"
+        android:label="ZedScope"
         android:supportsRtl="true"
         android:theme="@style/Theme.Yami"
         tools:targetApi="34">
@@ -43,7 +43,7 @@
             </intent-filter>
         </service>
 
-        <!-- Shares yami-UA-CA.crt with the system certificate installer. -->
+        <!-- Shares ZedScope-CA.crt with the system certificate installer. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

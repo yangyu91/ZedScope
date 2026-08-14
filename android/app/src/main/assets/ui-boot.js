@@ -1,9 +1,9 @@
 /* =====================================================================
-   yami-UA · UI 定制运行时（planned feature 的落地雏形）
+   ZedScope · UI 定制运行时（planned feature 的落地雏形）
    ---------------------------------------------------------------------
    职责：
-     1. 解析配置，优先级 localStorage['yami.ui.config'] > assets/ui.json
-        > window.YAMI_UI_DEFAULTS（ui-defaults.js）
+     1. 解析配置，优先级 localStorage['zedscope.ui.config'] > assets/ui.json
+        > window.ZEDSCOPE_UI_DEFAULTS（ui-defaults.js）
      2. 把 theme.* 写成 ui-tokens.css 的 CSS 自定义属性（accent / 圆角 /
         密度 / 动效），让起始页与配置页实时换肤
      3. 提供保存、导出、重置、区块可见性等公共能力给 home.html 与
@@ -16,7 +16,7 @@
 (function (global) {
   "use strict";
 
-  var KEY = "yami.ui.config";
+  var KEY = "zedscope.ui.config";
   var CONFIG_URL = "ui.json";
 
   /* ---------------- 工具 ---------------- */
@@ -79,16 +79,16 @@
   /**
    * 把 theme.* 落到 :root 的 CSS 变量上。
    * accent 之外的派生色（accent-soft / on-accent / glow / ripple）自动算出来，
-   * 这样用户只挑一个强调色也能保持对比度与 sukisu 的暗绿观感。
+   * 这样用户只挑一个强调色也能保持对比度与暖琥珀观感。
    */
   function applyTheme(cfg) {
     var t = (cfg && cfg.theme) || {};
     var root = document.documentElement;
     var set = function (k, v) { if (v) root.style.setProperty(k, v); };
 
-    var accent = /^#[0-9a-fA-F]{6}$/.test(t.accent || "") ? t.accent : "#6EDB8F";
-    var bg = /^#[0-9a-fA-F]{6}$/.test(t.background || "") ? t.background : "#0E0F11";
-    var surface = /^#[0-9a-fA-F]{6}$/.test(t.surface || "") ? t.surface : "#15171A";
+    var accent = /^#[0-9a-fA-F]{6}$/.test(t.accent || "") ? t.accent : "#D9A45B";
+    var bg = /^#[0-9a-fA-F]{6}$/.test(t.background || "") ? t.background : "#171513";
+    var surface = /^#[0-9a-fA-F]{6}$/.test(t.surface || "") ? t.surface : "#1E1C19";
     var accentDim = /^#[0-9a-fA-F]{6}$/.test(t.accentDim || "") ? t.accentDim : mix(accent, "#000000", 0.28);
 
     set("--accent", accent);
@@ -96,7 +96,7 @@
     set("--accent-soft", mix(bg, accent, 0.14));
     set("--on-accent", luma(accent) > 0.55 ? mix(accent, "#000000", 0.86) : "#FFFFFF");
     set("--on-accent-soft", mix(accent, "#FFFFFF", 0.45));
-    set("--accent-glow", rgba(accent, 0.3));
+    set("--accent-glow", rgba(accent, 0));   /* 刻意无发光（anti-slop） */
     set("--accent-ripple", rgba(accent, 0.2));
 
     set("--bg", bg);
@@ -124,7 +124,7 @@
   /* ---------------- 读写 ---------------- */
 
   function defaults() {
-    return clone(global.YAMI_UI_DEFAULTS || {});
+    return clone(global.ZEDSCOPE_UI_DEFAULTS || {});
   }
 
   function readLocal() {

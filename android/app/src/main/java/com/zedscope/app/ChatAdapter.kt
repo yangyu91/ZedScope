@@ -1,4 +1,4 @@
-package com.yamiua.app
+package com.zedscope.app
 
 import android.view.Gravity
 import android.view.LayoutInflater

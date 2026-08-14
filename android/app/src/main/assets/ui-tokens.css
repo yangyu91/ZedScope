@@ -1,57 +1,58 @@
 /* =====================================================================
-   yami-UA · shared design tokens for the in-app WebView pages
+   ZedScope · shared design tokens for the in-app WebView pages
    (home.html, ui-config.html)
 
    These values mirror res/values/colors.xml + res/values/dimens.xml so the
    start page and the native fragments read as one product:
-   SukiSU-style neutral dark surfaces + a single green accent, big radii,
-   flat elevation, soft shadows, short ease-out transitions.
+   Claude-style warm-neutral surfaces + a single restrained warm accent,
+   flat (no elevation glows), hairline dividers, generous whitespace,
+   short ease-out transitions. No gradients, no glows, no bounce.
 
    Anything a user can retune lives in ui.json -> applied at runtime by
    ui-boot.js, which rewrites the custom properties below.
    ===================================================================== */
 
 :root {
-  /* surface ramp */
-  --bg: #0E0F11;
-  --surface: #15171A;
-  --surface-2: #1B1E22;
-  --surface-3: #22262B;
-  --surface-4: #2A2F35;
-  --glass: rgba(21, 23, 26, .90);
+  /* surface ramp (warm, never pure black/grey) */
+  --bg: #171513;
+  --surface: #1E1C19;
+  --surface-2: #262320;
+  --surface-3: #2E2B27;
+  --surface-4: #36322D;
+  --glass: rgba(30, 28, 25, .92);
 
-  /* content */
-  --on: #ECEFF1;
-  --dim: #9AA3AB;
-  --faint: #6B747C;
+  /* content (warm-tinted) */
+  --on: #ECE9E3;
+  --dim: #A39E94;
+  --faint: #736E64;
 
-  /* accent (Material green, dark-scheme tuned) */
-  --accent: #6EDB8F;
-  --accent-dim: #3FBF74;
-  --accent-soft: #14291F;
-  --on-accent: #04240F;
-  --on-accent-soft: #A8F5C4;
-  --accent-glow: rgba(110, 219, 143, .30);
-  --accent-ripple: rgba(110, 219, 143, .20);
+  /* accent: a single restrained warm amber — the only saturated colour */
+  --accent: #D9A45B;
+  --accent-dim: #B9843F;
+  --accent-soft: #2C2417;
+  --on-accent: #1C1407;
+  --on-accent-soft: #E9CFA1;
+  --accent-glow: rgba(217, 164, 91, 0);   /* intentionally none (anti-slop) */
+  --accent-ripple: rgba(217, 164, 91, .18);
 
-  /* semantic */
-  --danger: #FF8A8A;
-  --warn: #FFC857;
-  --warn-soft: #33280F;
-  --info: #6CC6FF;
+  /* semantic (warm-tinted) */
+  --danger: #E08C7C;
+  --warn: #E0B25C;
+  --warn-soft: #2E2614;
+  --info: #B9A98F;
 
-  /* lines + shadow */
-  --line: #262A30;
-  --line-soft: rgba(255, 255, 255, .10);
-  --shadow: 0 8px 24px rgba(0, 0, 0, .35);
-  --shadow-sm: 0 2px 10px rgba(0, 0, 0, .28);
+  /* lines + shadow (flat: hairlines, no glows) */
+  --line: #2E2B27;
+  --line-soft: rgba(255, 255, 255, .08);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .28);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .22);
 
-  /* radii */
-  --r-xs: 8px;
-  --r-sm: 12px;
-  --r-md: 16px;
-  --r-lg: 22px;
-  --r-xl: 28px;
+  /* radii (restrained) */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
   --r-pill: 999px;
 
   /* spacing (density-aware: ui.json theme.density rescales --s-unit) */
@@ -88,16 +89,16 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-h1 { font-size: 21px; margin: 0; font-weight: 600; letter-spacing: .01em; }
+h1 { font-size: 22px; margin: 0; font-weight: 600; letter-spacing: .01em; }
 h2 { font-size: 15px; margin: 0; font-weight: 600; }
 a { color: var(--accent); }
 
 /* ---------- brand ---------- */
 .brand { display: flex; align-items: center; gap: var(--s-sm); }
 .dot {
-  width: 12px; height: 12px; border-radius: 50%;
+  width: 11px; height: 11px; border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-glow);
+  box-shadow: 0 0 0 3px var(--accent-soft);
   flex: 0 0 auto;
 }
 .sub { color: var(--dim); font-size: 12.5px; margin: var(--s-sm) 0 var(--s-xl); }
@@ -131,13 +132,13 @@ a { color: var(--accent); }
 .pill.on { background: var(--accent-soft); border-color: var(--accent-dim); color: var(--on-accent-soft); }
 .pill.warn { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
 .pill b { color: var(--on); font-weight: 600; }
-.pill .led { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.pill .led { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .pill.warn .led { background: var(--warn); box-shadow: none; }
 
 /* ---------- buttons / actions ---------- */
 .btn {
   display: flex; align-items: center; justify-content: center; gap: var(--s-sm);
-  border: 1px solid transparent; border-radius: var(--r-pill);
+  border: 1px solid transparent; border-radius: var(--r-md);
   padding: 13px var(--s-lg); font-size: 14px; font-weight: 600;
   font-family: var(--font);
   text-decoration: none; cursor: pointer;

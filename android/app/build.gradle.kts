@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.yamiua.app"
+    namespace = "com.zedscope.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.yamiua.app"
+        applicationId = "com.zedscope.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 100
+        versionName = "1.0.0"
     }
 
     // Signing: prefer a real keystore from the environment; fall back to the

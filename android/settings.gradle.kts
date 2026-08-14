@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "yami-UA"
+rootProject.name = "ZedScope"
 include(":app")

@@ -1,4 +1,4 @@
-package com.yamiua.app
+package com.zedscope.app
 
 import android.app.Application
 import android.content.Context

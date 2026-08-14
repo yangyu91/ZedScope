@@ -1,4 +1,4 @@
-# yami-UA · 全闭环 AI 浏览器架构（Roadmap）
+# ZedScope · 全闭环 AI 浏览器架构（Roadmap）
 
 > 目标：做一款**全端互通、安全绿色、免费好用、强大开源、优雅**的 AI 浏览器。
 > 安卓版**无需高级权限**即可工作；root / Shizuku 仅作为可选增强。
@@ -24,9 +24,9 @@ AI 的指令通过 WebView 自身的 JS Bridge 执行——**因为浏览器在�
 
 ---
 
-## 1. 四个参考仓库 → yami-UA 的落点
+## 1. 四个参考仓库 → ZedScope 的落点
 
-| 参考仓库 | 它的核心 | yami-UA 对应实现 |
+| 参考仓库 | 它的核心 | ZedScope 对应实现 |
 |---|---|---|
 | [farion1231/cc-switch](https://github.com/farion1231/cc-switch) | 本地代理 + 多 Provider + 协议转换 + 故障转移 + OpenAI 兼容 | `go/ai` 中转站：`/v1/chat/completions`、多 Provider 路由、健康探测、自动 failover、代理感知客户端 |
 | [zhu1090093659/deepseek-pp](https://github.com/zhu1090093659/deepseek-pp) | 浏览器扩展，复用 DeepSeek **网页登录态**做免费 Agent | `go/ai/deepseek_web.go`：导出 WebView 的 cookie → 驱动 chat.deepseek.com，零 key 免费 |
@@ -111,7 +111,7 @@ AI 的指令通过 WebView 自身的 JS Bridge 执行——**因为浏览器在�
 
 ## 5. 免费白嫖链路（用户视角）
 
-1. 打开 yami-UA，浏览器登录 chat.deepseek.com（拿到免费额度）。
+1. 打开 ZedScope，浏览器登录 chat.deepseek.com（拿到免费额度）。
 2. 点「DeepSeek 白嫖」→ 自动导出网页 cookie 喂给中转站。
 3. 正常上网，抓包面板实时显示请求；点「AI 分析」让免费 DeepSeek 帮你看风险/提取 token。
 4. 切到「AI」面板下指令："帮我打开 xx 并登录，把 token 复制给我"——Agent 在 WebView 里自己操作，结果回传。

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>yami-UA 浏览器</title>
+<title>ZedScope</title>
 <!-- 设计 token 与原生 res/values 保持一致，见 ui-tokens.css 头注释 -->
 <link rel="stylesheet" href="ui-tokens.css">
 <style>
@@ -14,13 +14,13 @@
 
   form.omni { display:flex; gap:var(--s-sm); margin-bottom:var(--s-md) }
   form.omni input {
-    flex:1 1 auto; border-radius:var(--r-pill); padding:13px var(--s-lg);
+    flex:1 1 auto; border-radius:var(--r-md); padding:13px var(--s-lg);
     background:var(--surface-2);
   }
   form.omni button {
     flex:0 0 auto; width:52px; padding:0; height:46px;
     display:flex; align-items:center; justify-content:center;
-    border:0; border-radius:var(--r-pill);
+    border:0; border-radius:var(--r-md);
     background:var(--accent); color:var(--on-accent);
     transition:transform var(--dur-fast) var(--ease);
   }
@@ -29,11 +29,10 @@
   /* 主行动：一键看网络日志（借鉴嗅觉浏览器「浏览 + 网络日志」双主线） */
   a.primary {
     display:flex; align-items:center; gap:var(--s-md);
-    background:linear-gradient(135deg, var(--accent-soft), var(--surface));
-    border:1px solid var(--accent-dim); border-radius:var(--r-lg);
+    background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--r-lg);
     padding:var(--s-lg); text-decoration:none; color:var(--on);
-    box-shadow:var(--shadow-sm);
-    transition:transform var(--dur-fast) var(--ease), border-color var(--dur) var(--ease);
+    transition:transform var(--dur-fast) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
   a.primary:active { transform:scale(.985) }
   a.primary .ico {
@@ -45,7 +44,7 @@
   a.primary .d { font-size:11.5px; color:var(--dim); margin-top:2px }
   a.primary .go { color:var(--accent); font-size:18px; flex:0 0 auto }
   /* AI 对话入口：用实色强调，区别于网络日志的柔和卡 */
-  a.primary.ai { background:var(--accent); color:var(--on-accent); border-color:var(--accent); box-shadow:0 6px 22px var(--accent-glow); }
+  a.primary.ai { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
   a.primary.ai .ico { background:var(--on-accent); color:var(--accent); }
   a.primary.ai .d { color:rgba(4, 36, 15, .72); }
   a.primary.ai .go { color:var(--on-accent); }
@@ -54,7 +53,7 @@
   a.site {
     display:block; background:var(--surface); border:1px solid var(--line);
     border-radius:var(--r-lg); padding:var(--s-lg); color:var(--on);
-    text-decoration:none; box-shadow:var(--shadow-sm);
+    text-decoration:none;
     transition:transform var(--dur-fast) var(--ease), background var(--dur) var(--ease),
                border-color var(--dur) var(--ease);
   }
@@ -72,15 +71,15 @@
   <!-- ============ 品牌 + 引擎状态 ============ -->
   <div data-block="home.showBrand">
     <div class="head">
-      <div class="brand"><span class="dot"></span><h1>yami-UA</h1></div>
+      <div class="brand"><span class="dot"></span><h1>ZedScope</h1></div>
       <a class="btn ghost sm" href="ui-config.html" style="flex:0 0 auto">界面定制</a>
     </div>
-    <div class="sub" style="margin-bottom:0">内置抓包调试的轻量 AI 浏览器 · 浏览为主，一键看网络日志</div>
+    <div class="sub" style="margin-bottom:0">ZedScope · 内置抓包调试的轻量 AI 浏览器 · 浏览为主，一键看网络日志</div>
   </div>
 
   <div class="status" data-block="home.showStatus">
     <span class="pill on"><i class="led"></i>抓包引擎 <b>随 App 启动</b></span>
-    <span class="pill" id="pillTheme">强调色 <b>绿</b></span>
+    <span class="pill" id="pillTheme">强调色 <b>琥珀</b></span>
     <span class="pill" id="pillSrc">配置 <b>默认</b></span>
   </div>
 
@@ -186,7 +185,7 @@
     }
 
     function paintStatus(source) {
-      var accent = (cfg.theme && cfg.theme.accent) || "#6EDB8F";
+      var accent = (cfg.theme && cfg.theme.accent) || "#D9A45B";
       var themePill = document.getElementById("pillTheme");
       themePill.innerHTML = "";
       var led = document.createElement("i");

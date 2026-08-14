@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Push yami-UA to a NEW GitHub repository, then trigger the APK build.
+# Push ZedScope to a NEW GitHub repository, then trigger the APK build.
 #
 # Prerequisites (run on a machine WITH internet access):
 #   - `gh` CLI installed and on PATH
@@ -15,8 +15,8 @@
 # =============================================================================
 set -euo pipefail
 
-REPO="yami-UA"
-DESC="yami-UA · 全端互通的安全免费 AI 浏览器：内置 MITM 抓包 + 改包 + Token 提取 + 本地 AI 中转站 + DeepSeek 白嫖桥 + 无权限浏览器 Agent。参考 proxypin / youtoo / sukisu-ui / cc-switch / deepseek-pp / Coomi-Android。"
+REPO="ZedScope"
+DESC="ZedScope · 全端互通的安全免费 AI 浏览器：内置 MITM 抓包 + 改包 + Token 提取 + 本地 AI 中转站 + DeepSeek 白嫖桥 + 无权限浏览器 Agent。参考 proxypin / youtoo / sukisu-ui / cc-switch / deepseek-pp / Coomi-Android。"
 
 # ---- preflight checks ----
 if ! command -v gh >/dev/null 2>&1; then
@@ -58,7 +58,7 @@ git add -A
 if git diff --cached --quiet; then
   echo "(nothing new to commit)"
 else
-  git commit -q -m "Initial commit: yami-UA AI capture browser (Go core + Android shell)"
+  git commit -q -m "Initial commit: ZedScope AI capture browser (Go core + Android shell)"
 fi
 
 git branch -M main
@@ -74,5 +74,5 @@ echo " Next: open Actions to get the APK"
 echo "   https://github.com/$USER/$REPO/actions"
 echo "   1) find the 'Build APK' run (triggered automatically)"
 echo "   2) wait for it to finish"
-echo "   3) download the 'yami-UA-apk' artifact -> install yami-UA.apk"
+echo "   3) download the 'ZedScope-apk' artifact -> install ZedScope.apk"
 echo "=========================================================="
