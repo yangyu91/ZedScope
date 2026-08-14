@@ -47,6 +47,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var flToken: android.widget.FrameLayout
     private lateinit var flSettings: android.widget.FrameLayout
     private lateinit var flAi: android.widget.FrameLayout
+    private lateinit var skeletonCapture: android.widget.FrameLayout
+    private lateinit var skeletonToken: android.widget.FrameLayout
     private lateinit var aiBridge: AiBridge
     private lateinit var swipeCapture: SwipeRefreshLayout
     private lateinit var rvCapture: RecyclerView
@@ -74,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rvChat: RecyclerView
     private lateinit var tvChatEmpty: TextView
     private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
+    private lateinit var typingDots: com.yamiua.app.ui.TypingDots
     private val chatHandler = Handler(Looper.getMainLooper())
 
     // v2 DEMO: VPN permission launcher for global (all-app) capture.
@@ -102,6 +105,8 @@ class MainActivity : AppCompatActivity() {
         flToken = findViewById(R.id.flToken)
         flSettings = findViewById(R.id.flSettings)
         flAi = findViewById(R.id.flAi)
+        skeletonCapture = findViewById(R.id.skeletonCapture)
+        skeletonToken = findViewById(R.id.skeletonToken)
         swipeCapture = findViewById(R.id.swipeCapture)
         rvCapture = findViewById(R.id.rvCapture)
         rvToken = findViewById(R.id.rvToken)
@@ -333,6 +338,7 @@ class MainActivity : AppCompatActivity() {
         // 对话气泡列表 + 快捷任务模板
         rvChat = findViewById(R.id.rvChat)
         tvChatEmpty = findViewById(R.id.tvChatEmpty)
+        typingDots = findViewById(R.id.typingDots)
         chipTasks = findViewById(R.id.chipTasks)
         chatAdapter = ChatAdapter()
         rvChat.layoutManager = LinearLayoutManager(this)
@@ -401,13 +407,14 @@ class MainActivity : AppCompatActivity() {
             val caps = YamiCore.captures()
             val id = if (caps.isNotEmpty()) caps.last().id.toString() else ""
             chatAdapter.add(ChatMsg("user", "分析最近一条抓包（token 泄露 / 注入风险 + 可复制 curl）"))
-            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
             updateChatEmpty()
+            showTyping()
             Thread {
                 val r = YamiCore.aiAnalyze(id, "请分析这条请求：有无 token 泄露/注入风险？给可复制的 curl。")
                 runOnUiThread {
-                    chatAdapter.updateLast(r.ifBlank { "（暂无抓包数据，先去浏览器访问网页）" })
-                    rvChat.scrollToPosition(chatAdapter.itemCount - 1)
+                    hideTyping()
+                    chatAdapter.add(ChatMsg("ai", ""))
+                    streamInto(r.ifBlank { "（暂无抓包数据，先去浏览器访问网页）" })
                 }
             }.start()
         }
@@ -419,11 +426,15 @@ class MainActivity : AppCompatActivity() {
             if (currentSessionId.isBlank()) { currentSessionId = YamiCore.aiSessionNew(); tvSession.text = currentSessionId }
             etInput.setText("")
             chatAdapter.add(ChatMsg("user", task))
-            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
             updateChatEmpty()
+            showTyping()
             Thread {
                 val r = YamiCore.aiChatSession(currentSessionId, task)
-                runOnUiThread { streamInto(r.ifBlank { "（AI 未返回内容）" }) }
+                runOnUiThread {
+                    hideTyping()
+                    chatAdapter.add(ChatMsg("ai", ""))
+                    streamInto(r.ifBlank { "（AI 未返回内容）" })
+                }
             }.start()
         }
 
@@ -462,13 +473,14 @@ class MainActivity : AppCompatActivity() {
             if (cmd.isBlank()) return@setOnClickListener
             if (sshId.isBlank()) { tvSshStatus.text = "请先连接 SSH"; return@setOnClickListener }
             chatAdapter.add(ChatMsg("user", "SSH $sshId \$ $cmd"))
-            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
             updateChatEmpty()
+            showTyping()
             Thread {
                 val r = YamiCore.aiSshExec(sshId, cmd)
                 runOnUiThread {
-                    chatAdapter.updateLast(r.ifBlank { "（无输出）" })
-                    rvChat.scrollToPosition(chatAdapter.itemCount - 1)
+                    hideTyping()
+                    chatAdapter.add(ChatMsg("ai", ""))
+                    streamInto(r.ifBlank { "（无输出）" })
                 }
             }.start()
         }
@@ -479,11 +491,15 @@ class MainActivity : AppCompatActivity() {
         if (currentSessionId.isBlank()) { currentSessionId = YamiCore.aiSessionNew(); tvSession.text = currentSessionId }
         etInput.setText("")
         chatAdapter.add(ChatMsg("user", task))
-        chatAdapter.add(ChatMsg("ai", getString(R.string.ai_agent_thinking)))
         updateChatEmpty()
+        showTyping()
         Thread {
             val r = YamiCore.aiAgentRunSession(currentSessionId, task)
-            runOnUiThread { streamInto(r.ifBlank { "（Agent 未返回内容）" }) }
+            runOnUiThread {
+                hideTyping()
+                chatAdapter.add(ChatMsg("ai", ""))
+                streamInto(r.ifBlank { "（Agent 未返回内容）" })
+            }
         }.start()
     }
 
@@ -562,8 +578,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (which == 0) updateBanner()
-        if (which == 1) refreshCapture()
-        if (which == 2) refreshToken()
+        if (which == 1) loadWithSkeleton(skeletonCapture, ::refreshCapture)
+        if (which == 2) loadWithSkeleton(skeletonToken, ::refreshToken)
+    }
+
+    /**
+     * Show a precise skeleton, then run [load] after a short beat and crossfade
+     * the skeleton out — the GitHub-Android-style "precise skeleton" load.
+     */
+    private fun loadWithSkeleton(skeleton: android.widget.FrameLayout, load: () -> Unit) {
+        skeleton.alpha = 1f
+        skeleton.visibility = View.VISIBLE
+        skeleton.postDelayed({
+            load()
+            skeleton.animate().alpha(0f).setDuration(180L).withEndAction {
+                skeleton.visibility = View.GONE
+            }.start()
+        }, 280L)
+    }
+
+    /** Show the AI "thinking" dots while a response streams in. */
+    private fun showTyping() {
+        typingDots.visibility = View.VISIBLE
+        typingDots.start()
+    }
+
+    private fun hideTyping() {
+        typingDots.stop()
+        typingDots.visibility = View.GONE
     }
 
     private fun refreshCapture() {

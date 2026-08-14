@@ -262,23 +262,38 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                android:id="@+id/swipeCapture"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvCapture"
+                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                    android:id="@+id/swipeCapture"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvCapture"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:paddingStart="@dimen/yami_list_padding"
+                        android:paddingEnd="@dimen/yami_list_padding"
+                        android:paddingTop="@dimen/yami_space_xs"
+                        android:paddingBottom="88dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="vertical" />
+                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+                <!-- skeleton shown while the log loads (crossfades into the list) -->
+                <FrameLayout
+                    android:id="@+id/skeletonCapture"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:paddingStart="@dimen/yami_list_padding"
-                    android:paddingEnd="@dimen/yami_list_padding"
-                    android:paddingTop="@dimen/yami_space_xs"
-                    android:paddingBottom="88dp"
-                    android:clipToPadding="false"
-                    android:scrollbars="vertical" />
-            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                    android:background="?attr/colorSurface"
+                    android:visibility="gone">
+                    <include layout="@layout/skeleton_capture" />
+                </FrameLayout>
+            </FrameLayout>
         </LinearLayout>
 
         <TextView
@@ -343,17 +358,32 @@
                     style="@style/Yami.Text.Dim" />
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvToken"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:paddingStart="@dimen/yami_list_padding"
-                android:paddingEnd="@dimen/yami_list_padding"
-                android:paddingTop="@dimen/yami_space_xs"
-                android:paddingBottom="88dp"
-                android:clipToPadding="false"
-                android:scrollbars="vertical" />
+                android:layout_weight="1">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvToken"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingStart="@dimen/yami_list_padding"
+                    android:paddingEnd="@dimen/yami_list_padding"
+                    android:paddingTop="@dimen/yami_space_xs"
+                    android:paddingBottom="88dp"
+                    android:clipToPadding="false"
+                    android:scrollbars="vertical" />
+
+                <!-- skeleton shown while the credentials load -->
+                <FrameLayout
+                    android:id="@+id/skeletonToken"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/colorSurface"
+                    android:visibility="gone">
+                    <include layout="@layout/skeleton_token" />
+                </FrameLayout>
+            </FrameLayout>
         </LinearLayout>
 
         <TextView

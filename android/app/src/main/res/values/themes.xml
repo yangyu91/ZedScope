@@ -1,15 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- =====================================================================
-         Theme.Yami — SukiSU-inspired: neutral dark surfaces + green accent,
-         big (expressive) radii, flat elevation, green ripples.
+         Theme.Yami — ZedScope: warm-neutral surfaces + a single warm accent.
+         Flat (no elevation), hairline dividers, restrained radii, calm motion.
 
-         The colour roles below are declared explicitly, so the green tokens in
-         values/colors.xml are the single source of truth and the native UI
-         matches assets/ui-tokens.css (home.html / ui-config.html) exactly.
-         Roles we do NOT redeclare still follow Material You on Android 12+.
-         MONET mode (SukiSU-style): delete the four colorPrimary* items below and
-         the wallpaper palette from the DynamicColors parent takes over, while
-         shapes / typography / surfaces stay identical.
+         Colour roles are declared explicitly so the tokens in
+         values/colors.xml stay the single source of truth and the native UI
+         matches assets/ui-tokens.css exactly. Roles we do NOT redeclare still
+         follow Material You on Android 12+.
          ===================================================================== -->
     <style name="Theme.Yami" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
         <!-- accent / primary -->
@@ -46,12 +43,12 @@
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="elevationOverlayEnabled">false</item>
 
-        <!-- motion: green ripple everywhere + fade between panels -->
+        <!-- motion: accent ripple everywhere + soft fade between panels -->
         <item name="android:colorControlHighlight">@color/yami_accent_ripple</item>
         <item name="android:windowAnimationStyle">@style/Yami.WindowAnim</item>
         <item name="android:listDivider">@color/yami_divider</item>
 
-        <!-- shape scale (SukiSU big radii) -->
+        <!-- shape scale (restrained) -->
         <item name="shapeAppearanceCornerExtraSmall">@style/Yami.Shape.XS</item>
         <item name="shapeAppearanceCornerSmall">@style/Yami.Shape.SM</item>
         <item name="shapeAppearanceCornerMedium">@style/Yami.Shape.MD</item>
@@ -101,9 +98,9 @@
         <item name="cornerSize">@dimen/yami_radius_xl</item>
     </style>
 
-    <!-- ===== Buttons: expressive pill ===== -->
+    <!-- ===== Buttons: restrained rounded rectangle ===== -->
     <style name="Yami.Button" parent="Widget.Material3.Button">
-        <item name="cornerRadius">@dimen/yami_radius_pill</item>
+        <item name="cornerRadius">@dimen/yami_radius_md</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:letterSpacing">0.01</item>
@@ -114,7 +111,7 @@
     </style>
 
     <style name="Yami.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
-        <item name="cornerRadius">@dimen/yami_radius_pill</item>
+        <item name="cornerRadius">@dimen/yami_radius_md</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="backgroundTint">@color/yami_accent_soft</item>
@@ -123,9 +120,9 @@
         <item name="rippleColor">@color/yami_accent_ripple</item>
     </style>
 
-    <!-- Neutral (secondary) action: settings rows, destructive-ish actions -->
+    <!-- Neutral (secondary) action -->
     <style name="Yami.Button.Outline" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">@dimen/yami_radius_pill</item>
+        <item name="cornerRadius">@dimen/yami_radius_md</item>
         <item name="android:textAllCaps">false</item>
         <item name="strokeColor">@color/yami_divider</item>
         <item name="android:textColor">@color/yami_on_surface</item>
@@ -145,7 +142,7 @@
         <item name="android:textCursorDrawable">@null</item>
     </style>
 
-    <!-- Browser address bar: fully rounded, green ring on focus -->
+    <!-- Browser address bar: fully rounded, accent ring on focus -->
     <style name="Yami.EditText.Pill" parent="Yami.EditText">
         <item name="android:background">@drawable/bg_addr_pill_state</item>
         <item name="android:textSize">14sp</item>
@@ -179,7 +176,7 @@
         <item name="rippleColor">@color/yami_accent_ripple</item>
     </style>
 
-    <!-- ===== Cards: big expressive radius, flat, hairline outline ===== -->
+    <!-- ===== Cards: restrained radius, flat, hairline outline ===== -->
     <style name="Yami.Card" parent="Widget.Material3.CardView.Filled">
         <item name="cardBackgroundColor">@color/yami_surface</item>
         <item name="cardCornerRadius">@dimen/yami_radius_lg</item>
@@ -190,7 +187,7 @@
         <item name="rippleColor">@color/yami_accent_ripple</item>
     </style>
 
-    <!-- Card that reads as "highlighted / active" (green tonal) -->
+    <!-- Card that reads as "highlighted / active" (accent tint) -->
     <style name="Yami.Card.Accent" parent="Yami.Card">
         <item name="cardBackgroundColor">@color/yami_accent_soft</item>
         <item name="strokeColor">@color/yami_accent_dim</item>
@@ -229,7 +226,7 @@
         <item name="android:textColor">@color/yami_on_surface</item>
         <item name="android:fontFamily">monospace</item>
     </style>
-    <!-- Section label above a card group: small, dim, tracked-out uppercase -->
+    <!-- Section label above a group: small, dim, tracked-out uppercase -->
     <style name="Yami.Text.Label" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textColor">@color/yami_on_surface_faint</item>
         <item name="android:letterSpacing">0.10</item>

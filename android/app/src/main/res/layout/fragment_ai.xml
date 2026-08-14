@@ -471,6 +471,15 @@
         style="@style/Yami.Text.Dim"
         android:visibility="gone" />
 
+    <!-- AI "thinking" indicator: shown while a response streams in -->
+    <com.yamiua.app.ui.TypingDots
+        android:id="@+id/typingDots"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:layout_marginStart="@dimen/yami_list_padding"
+        android:layout_marginTop="@dimen/yami_space_xs"
+        android:visibility="gone" />
+
     <!-- Input bar -->
     <LinearLayout
         android:layout_width="match_parent"
