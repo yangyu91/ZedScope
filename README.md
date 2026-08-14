@@ -196,8 +196,9 @@ curl -X POST http://127.0.0.1:8910/ai/analyze \
 | 15 | `sendTcp` 三处调用（`VpnForwarder` 122/138/181）漏传必填 `fin` → `No value passed for parameter 'fin'` | `fin` 加默认值 `= false`，调用处不传即默认 false（显式 `fin = true` 仍有效）|
 | 16 | `VpnCaptureService` 在 `onDestroy` 调 `FileDescriptor.close()`（API 33+），Android 8~12 崩溃 | 见 #9：`ParcelFileDescriptor` 保存并 `pfd?.close()` |
 | 17 | `builder.allowFamily(...)` 是 API 28+，Android 7/8 启动 VPN 崩 | 加 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.P` 守卫，低版本跳过 |
+| 18 | **运行时"点开就闪退"**（构建全绿、资源齐全，但装上即崩）：项目从无 `Application` 类、也从未调 gomobile 的 `Yami.init(ctx)`；首次 `Yami.*` 触发 `.so` 加载与 Go runtime 初始化时，部分 Android 版本因 context 未就绪 **native 崩溃(SIGSEGV/SIGABRT)**，Kotlin `try/catch` 完全拦不住 | 新增 `YamiApplication(:Application)`，在 `onCreate` 最早时机反射调 `Yami.init(applicationContext)`（见 `YamiApplication.kt`）；`AndroidManifest` 注册 `android:name=".YamiApplication"`。删掉该类或把 init 挪出 `Application.onCreate` 必复发 |
 
-> **防回归红线**：`go.mod` 的 `crypto` 必须 pin 在 `v0.31.0`，`gomobile` 必须在依赖图且**不能 `go mod tidy`**（见 #3）。`ProxyController`/`ProxyConfig` 必须**都用 androidx.webkit 同源**；`Adapter` 内 `CLIPBOARD_SERVICE` 必须全限定；`sendTcp` 的 `fin` 参数保持默认值。任何把 `go get x/crypto@latest`、`go mod tidy`、或把 androidx 类改回平台类的动作都会再次触发对应错误。
+> **防回归红线**：`go.mod` 的 `crypto` 必须 pin 在 `v0.31.0`，`gomobile` 必须在依赖图且**不能 `go mod tidy`**（见 #3）。`ProxyController`/`ProxyConfig` 必须**都用 androidx.webkit 同源**；`Adapter` 内 `CLIPBOARD_SERVICE` 必须全限定；`sendTcp` 的 `fin` 参数保持默认值。**`YamiApplication` 必须注册且 `Yami.init(applicationContext)` 必须在 `Application.onCreate` 最早调用**——任何把 `Yami.init` 调用删掉/挪到 Activity、或删掉 `YamiApplication` 的动作都会让"点开就闪退"复发（见 #18）。`ca.NewCA` 已改为返回 error（不再 `panic`），因为 Go 侧 `panic` 会变成 native `SIGABRT` 且 Kotlin 无法捕获。
 
 ---
 
