@@ -1,0 +1,7 @@
+<!-- Neutral pill: counters / stat chips in the capture header. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/yami_surface_2" />
+    <corners android:radius="@dimen/yami_radius_pill" />
+    <stroke android:width="@dimen/yami_stroke" android:color="@color/yami_divider" />
+</shape>

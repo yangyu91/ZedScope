@@ -1,0 +1,13 @@
+<!-- Browser top bar: flat surface + a single hairline instead of an elevation shadow. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/yami_surface" />
+        </shape>
+    </item>
+    <item android:gravity="bottom" android:height="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/yami_divider" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>界面定制 · yami-UA</title>
+<link rel="stylesheet" href="ui-tokens.css">
+<style>
+  .top { display:flex; align-items:center; gap:var(--s-md); margin-bottom:var(--s-lg) }
+  .top .back {
+    width:38px; height:38px; flex:0 0 auto; border-radius:var(--r-pill);
+    background:var(--surface-2); border:1px solid var(--line); color:var(--on);
+    display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;
+  }
+  .tag {
+    display:inline-block; font-size:9.5px; font-weight:600; letter-spacing:.06em;
+    padding:2px 7px; border-radius:var(--r-pill); vertical-align:middle; margin-left:6px;
+    background:var(--surface-3); color:var(--faint); border:1px solid var(--line);
+    text-transform:none;
+  }
+  .tag.live { background:var(--accent-soft); color:var(--on-accent-soft); border-color:var(--accent-dim) }
+
+  /* 实时预览：把当前 token 套在一个迷你界面上 */
+  .preview {
+    border-radius:var(--r-lg); border:1px solid var(--line); overflow:hidden;
+    background:var(--bg); box-shadow:var(--shadow)
+  }
+  .pv-bar {
+    display:flex; align-items:center; gap:8px; padding:10px 12px;
+    background:var(--surface); border-bottom:1px solid var(--line)
+  }
+  .pv-bar .u {
+    flex:1 1 auto; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:var(--r-pill); padding:7px 12px; font-size:11px; color:var(--dim)
+  }
+  .pv-body { padding:12px; display:flex; flex-direction:column; gap:8px }
+  .pv-card {
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+    padding:12px
+  }
+  .pv-card .m {
+    display:inline-block; font-family:var(--font-mono); font-size:10px; font-weight:700;
+    color:var(--accent); background:var(--accent-soft); border-radius:var(--r-xs); padding:2px 8px
+  }
+  .pv-card .url { font-size:11.5px; margin-top:7px; color:var(--on) }
+  .pv-nav {
+    display:flex; justify-content:space-around; padding:8px 0;
+    border-top:1px solid var(--line); background:var(--bg)
+  }
+  .pv-nav span { font-size:10px; color:var(--faint) }
+  .pv-nav span.on {
+    color:var(--accent); background:var(--accent-soft); border-radius:var(--r-md); padding:3px 12px
+  }
+
+  .swatches { display:flex; gap:8px; flex-wrap:wrap; margin-top:var(--s-sm) }
+  .sw-dot {
+    width:30px; height:30px; border-radius:50%; border:2px solid transparent;
+    cursor:pointer; padding:0;
+  }
+  .sw-dot[aria-pressed="true"] { border-color:var(--on) }
+
+  .bm { display:flex; gap:6px; align-items:center; margin-bottom:6px }
+  .bm input { padding:9px var(--s-md); font-size:12.5px }
+  .bm .t { flex:0 0 32% }
+  .bm .del {
+    flex:0 0 auto; width:34px; height:34px; border-radius:var(--r-pill);
+    background:var(--surface-2); border:1px solid var(--line); color:var(--danger);
+    font-size:16px; line-height:1; cursor:pointer
+  }
+  .sticky {
+    position:sticky; bottom:0; margin:var(--s-lg) calc(var(--s-lg) * -1) 0;
+    padding:var(--s-md) var(--s-lg) calc(var(--s-md) + env(safe-area-inset-bottom));
+    background:var(--glass); border-top:1px solid var(--line);
+    display:flex; gap:var(--s-sm)
+  }
+  details.raw summary { font-size:12.5px; color:var(--dim); cursor:pointer; padding:6px 0 }
+  .val { font-family:var(--font-mono); font-size:11.5px; color:var(--accent) }
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <a class="back" href="home.html" aria-label="返回起始页">‹</a>
+    <div>
+      <h1 style="font-size:18px">界面定制</h1>
+      <div style="font-size:11.5px;color:var(--faint);margin-top:2px">配置写入 ui.json 结构 · 可读可改可保存</div>
+    </div>
+  </div>
+
+  <!-- ============ 实时预览 ============ -->
+  <div class="label"><span>实时预览</span></div>
+  <div class="preview">
+    <div class="pv-bar">
+      <span style="color:var(--dim);font-size:13px">‹ ›</span>
+      <span class="u">https://example.com</span>
+      <span style="color:var(--accent);font-size:13px">⟳</span>
+    </div>
+    <div class="pv-body">
+      <div class="pv-card">
+        <span class="m">GET</span>
+        <div class="url">https://example.com/api/login</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <span class="pill on"><i class="led"></i>抓包中</span>
+        <span class="pill">token <b>3</b></span>
+      </div>
+    </div>
+    <div class="pv-nav">
+      <span class="on">浏览器</span><span>抓包</span><span>AI</span><span>Token</span><span>设置</span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ============ 主题 token ============ -->
+  <div class="label"><span>设计 token<span class="tag live">已生效</span></span></div>
+  <div class="card">
+    <div class="opt">
+      <div class="txt">
+        <div class="t">强调色 accent</div>
+        <div class="d">sukisu 暗绿默认 #6EDB8F；派生的柔和绿/文字色自动算出</div>
+      </div>
+      <input type="color" id="accent">
+    </div>
+    <div class="swatches" id="swatches"></div>
+
+    <div class="opt">
+      <div class="txt">
+        <div class="t">卡片圆角 radius <span class="val" id="radiusVal">22</span></div>
+        <div class="d">0–32，同步 res/values/dimens.xml 的 yami_radius_lg</div>
+      </div>
+      <input type="range" id="radius" min="0" max="32" step="1" style="flex:0 0 42%">
+    </div>
+
+    <div class="opt">
+      <div class="txt">
+        <div class="t">间距密度 density</div>
+        <div class="d">紧凑 / 标准 / 宽松（基准单位 3/4/5px）</div>
+      </div>
+      <select id="density" style="flex:0 0 40%">
+        <option value="compact">紧凑</option>
+        <option value="normal">标准</option>
+        <option value="comfortable">宽松</option>
+      </select>
+    </div>
+
+    <div class="opt">
+      <div class="txt">
+        <div class="t">过渡动效 motion</div>
+        <div class="d">关闭后波纹与过渡时长归零</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="motion"><i></i></label>
+    </div>
+
+    <div class="opt">
+      <div class="txt">
+        <div class="t">跟随壁纸取色 monet<span class="tag">待原生接入</span></div>
+        <div class="d">Material You / SukiSU MONET；开启后忽略上面的 accent</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="monet"><i></i></label>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ============ 区块可见性 ============ -->
+  <div class="label"><span>UI 区块</span></div>
+  <div class="card" id="blocks"></div>
+
+  <div class="spacer"></div>
+
+  <!-- ============ 搜索与书签 ============ -->
+  <div class="label"><span>搜索与常用入口<span class="tag live">已生效</span></span></div>
+  <div class="card">
+    <div class="opt" style="display:block">
+      <div class="t" style="margin-bottom:6px">搜索模板（%s 为关键词）</div>
+      <input type="text" id="tpl" inputmode="url" placeholder="https://www.bing.com/search?q=%s">
+    </div>
+    <div class="opt" style="display:block;border-top:1px solid var(--line-soft)">
+      <div class="t" style="margin:6px 0">常用入口</div>
+      <div id="bms"></div>
+      <button class="btn ghost sm" id="addBm" style="margin-top:8px">+ 添加入口</button>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ============ 原始 JSON ============ -->
+  <div class="label"><span>ui.json</span></div>
+  <div class="card">
+    <details class="raw">
+      <summary>查看 / 粘贴导入完整配置</summary>
+      <textarea id="raw" rows="12" spellcheck="false" style="margin-top:8px"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost sm" id="copy">复制</button>
+        <button class="btn ghost sm" id="importBtn">导入</button>
+      </div>
+    </details>
+    <div class="d" style="font-size:11px;color:var(--faint);margin-top:8px" id="whereHint"></div>
+  </div>
+
+  <!-- ============ 底部操作 ============ -->
+  <div class="sticky">
+    <button class="btn ghost" id="reset" style="flex:0 0 34%">恢复默认</button>
+    <button class="btn" id="save" style="flex:1 1 auto">保存并应用</button>
+  </div>
+
+  <script src="ui-defaults.js"></script>
+  <script src="ui-boot.js"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    /* 区块开关的元数据：label / 说明 / 是否已在 WebView 侧生效
+       （scope=native 的项写入配置但等 MainActivity 接入，UI 上明确标注） */
+    var BLOCK_META = [
+      ["home", "起始页", [
+        ["showBrand", "品牌区", 1], ["showStatus", "状态胶囊", 1],
+        ["showSearch", "搜索/网址直达", 1], ["showQuickActions", "网络日志等快捷入口", 1],
+        ["showCaHint", "证书引导", 1], ["showBookmarks", "常用入口", 1]
+      ]],
+      ["topbar", "浏览器顶栏", [
+        ["visible", "整块显示", 0], ["showBack", "后退", 0], ["showForward", "前进", 0],
+        ["showReload", "刷新", 0], ["showShield", "地址栏盾图标", 0]
+      ]],
+      ["browser", "浏览主窗口", [
+        ["showProgress", "加载进度条", 0], ["showCaptureBanner", "抓包为空引导条", 0]
+      ]],
+      ["capture", "抓包 / 网络日志", [
+        ["showStats", "顶部统计", 0], ["showMethodChip", "方法芯片", 0],
+        ["showSchemeTag", "HTTPS 标记", 0], ["showLoginFlag", "登录标记", 0],
+        ["cleanCapture", "纯净抓包", 0]
+      ]],
+      ["token", "Token 面板", [
+        ["visible", "整块显示", 0], ["showSource", "来源标签", 0], ["maskValue", "默认打码", 0]
+      ]],
+      ["ai", "AI 面板", [
+        ["visible", "整块显示", 0], ["showCompact", "省 token 开关", 0],
+        ["showSession", "会话卡", 0], ["showQuickChips", "快捷动作", 0]
+      ]],
+      ["settings", "设置面板", [
+        ["showVpn", "全局抓包", 0], ["showCert", "证书", 0], ["showAbout", "关于", 0]
+      ]],
+      ["bottomNav", "底部导航", [["visible", "整块显示", 0], ["labels", "显示文字", 0]]]
+    ];
+
+    var PRESETS = ["#6EDB8F", "#3FBF74", "#6CC6FF", "#FFC857", "#FF8A8A", "#B69DFF"];
+
+    var cfg = YamiUI.defaults();
+    var $ = function (id) { return document.getElementById(id); };
+
+    /* ---------- 渲染 ---------- */
+
+    function renderSwatches() {
+      var box = $("swatches");
+      box.textContent = "";
+      PRESETS.forEach(function (hex) {
+        var b = document.createElement("button");
+        b.className = "sw-dot";
+        b.style.background = hex;
+        b.title = hex;
+        b.setAttribute("aria-pressed", String((cfg.theme.accent || "").toUpperCase() === hex));
+        b.addEventListener("click", function () {
+          cfg.theme.accent = hex;
+          cfg.theme.accentDim = "";      // 交给 ui-boot 自动派生
+          syncForm(); apply();
+        });
+        box.appendChild(b);
+      });
+    }
+
+    function renderBlocks() {
+      var box = $("blocks");
+      box.textContent = "";
+      BLOCK_META.forEach(function (group, gi) {
+        var key = group[0], name = group[1], items = group[2];
+        var head = document.createElement("div");
+        head.className = "label";
+        head.style.margin = (gi ? "14px" : "2px") + " 0 4px";
+        var span = document.createElement("span");
+        span.textContent = name;
+        head.appendChild(span);
+        box.appendChild(head);
+
+        items.forEach(function (it) {
+          var field = it[0], label = it[1], live = it[2];
+          var row = document.createElement("div");
+          row.className = "opt";
+          var txt = document.createElement("div");
+          txt.className = "txt";
+          var t = document.createElement("div");
+          t.className = "t";
+          t.textContent = label;
+          if (!live) {
+            var tag = document.createElement("span");
+            tag.className = "tag";
+            tag.textContent = "待原生接入";
+            t.appendChild(tag);
+          }
+          var d = document.createElement("div");
+          d.className = "d mono";
+          d.textContent = "blocks." + key + "." + field;
+          txt.appendChild(t); txt.appendChild(d);
+
+          var wrap = document.createElement("label");
+          wrap.className = "sw";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = cfg.blocks[key] ? cfg.blocks[key][field] !== false : true;
+          cb.addEventListener("change", function () {
+            if (!cfg.blocks[key]) cfg.blocks[key] = {};
+            cfg.blocks[key][field] = cb.checked;
+            apply();
+          });
+          wrap.appendChild(cb);
+          wrap.appendChild(document.createElement("i"));
+
+          row.appendChild(txt); row.appendChild(wrap);
+          box.appendChild(row);
+        });
+      });
+    }
+
+    function renderBookmarks() {
+      var box = $("bms");
+      box.textContent = "";
+      (cfg.bookmarks || []).forEach(function (bm, i) {
+        var row = document.createElement("div");
+        row.className = "bm";
+        var t = document.createElement("input");
+        t.className = "t"; t.type = "text"; t.value = bm.title || ""; t.placeholder = "名称";
+        t.addEventListener("input", function () { cfg.bookmarks[i].title = t.value; dumpRaw(); });
+        var u = document.createElement("input");
+        u.type = "text"; u.inputMode = "url"; u.value = bm.url || ""; u.placeholder = "https://";
+        u.addEventListener("input", function () { cfg.bookmarks[i].url = u.value; dumpRaw(); });
+        var del = document.createElement("button");
+        del.className = "del"; del.textContent = "×"; del.title = "删除";
+        del.addEventListener("click", function () {
+          cfg.bookmarks.splice(i, 1);
+          renderBookmarks(); dumpRaw();
+        });
+        row.appendChild(t); row.appendChild(u); row.appendChild(del);
+        box.appendChild(row);
+      });
+    }
+
+    function syncForm() {
+      $("accent").value = cfg.theme.accent || "#6EDB8F";
+      $("radius").value = cfg.theme.radius == null ? 22 : cfg.theme.radius;
+      $("radiusVal").textContent = $("radius").value;
+      $("density").value = cfg.theme.density || "normal";
+      $("motion").checked = cfg.theme.motion !== false;
+      $("monet").checked = cfg.theme.monet === true;
+      $("tpl").value = (cfg.search && cfg.search.template) || "";
+      renderSwatches();
+      renderBookmarks();
+      dumpRaw();
+    }
+
+    function dumpRaw() { $("raw").value = YamiUI.toJson(cfg); }
+
+    function apply() {
+      YamiUI.applyTheme(cfg);
+      renderSwatches();
+      dumpRaw();
+    }
+
+    /* ---------- 表单事件 ---------- */
+
+    $("accent").addEventListener("input", function () {
+      cfg.theme.accent = this.value.toUpperCase();
+      cfg.theme.accentDim = "";
+      apply();
+    });
+    $("radius").addEventListener("input", function () {
+      cfg.theme.radius = parseInt(this.value, 10);
+      $("radiusVal").textContent = this.value;
+      apply();
+    });
+    $("density").addEventListener("change", function () { cfg.theme.density = this.value; apply(); });
+    $("motion").addEventListener("change", function () { cfg.theme.motion = this.checked; apply(); });
+    $("monet").addEventListener("change", function () { cfg.theme.monet = this.checked; dumpRaw(); });
+    $("tpl").addEventListener("input", function () {
+      cfg.search = cfg.search || {};
+      cfg.search.template = this.value;
+      dumpRaw();
+    });
+    $("addBm").addEventListener("click", function () {
+      cfg.bookmarks = cfg.bookmarks || [];
+      if (cfg.bookmarks.length >= 24) return YamiUI.toast("最多 24 个入口");
+      cfg.bookmarks.push({ title: "", url: "https://" });
+      renderBookmarks(); dumpRaw();
+    });
+
+    $("save").addEventListener("click", function () {
+      var r = YamiUI.save(cfg);
+      YamiUI.toast(r.ok ? "已保存到 " + r.where + "，起始页立即生效" : "保存失败：" + r.error);
+    });
+
+    $("reset").addEventListener("click", function () {
+      YamiUI.reset();
+      cfg = YamiUI.defaults();
+      syncForm(); apply();
+      YamiUI.toast("已恢复默认配置");
+    });
+
+    $("copy").addEventListener("click", function () {
+      var ta = $("raw");
+      ta.focus(); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      if (!ok && navigator.clipboard) {
+        navigator.clipboard.writeText(ta.value).then(function () { YamiUI.toast("已复制 JSON"); });
+        return;
+      }
+      YamiUI.toast(ok ? "已复制 JSON" : "复制失败，请长按手动复制");
+    });
+
+    $("importBtn").addEventListener("click", function () {
+      try {
+        var next = JSON.parse($("raw").value);
+        cfg = YamiUI.merge(YamiUI.defaults(), next);
+        syncForm(); apply();
+        YamiUI.toast("已导入，记得点保存");
+      } catch (e) {
+        YamiUI.toast("JSON 解析失败：" + e.message);
+      }
+    });
+
+    /* ---------- 启动 ---------- */
+
+    YamiUI.load().then(function (res) {
+      cfg = res.config;
+      var where = YamiUI.hasBridge() ? "原生 ui.json" : "localStorage（未接原生写盘桥）";
+      $("whereHint").textContent =
+        "当前来源：" + res.source + " · 保存去处：" + where +
+        " · schema 见 assets/ui.schema.json";
+      syncForm();
+      apply();
+      renderBlocks();
+    });
+
+    syncForm();
+    apply();
+    renderBlocks();
+  })();
+  </script>
+</body>
+</html>

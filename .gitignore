@@ -1,0 +1,15 @@
+# Build artifacts
+*.aar
+*.apk
+*.aab
+*.keystore
+*.jks
+build/
+.gradle/
+.idea/
+*.iml
+local.properties
+captures/
+*.log
+.DS_Store
+Thumbs.db

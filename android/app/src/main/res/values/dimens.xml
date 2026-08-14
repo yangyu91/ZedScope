@@ -1,0 +1,35 @@
+<resources>
+    <!-- =====================================================================
+         yami-UA shape / spacing tokens (SukiSU-style: big radii, airy spacing)
+         Keep these in sync with assets/ui-tokens.css (r-star, s-star vars).
+         ===================================================================== -->
+
+    <!-- corner radii -->
+    <dimen name="yami_radius_xs">8dp</dimen>
+    <dimen name="yami_radius_sm">12dp</dimen>
+    <dimen name="yami_radius_md">16dp</dimen>
+    <dimen name="yami_radius_lg">22dp</dimen>
+    <dimen name="yami_radius_xl">28dp</dimen>
+    <dimen name="yami_radius_pill">100dp</dimen>
+
+    <!-- spacing scale -->
+    <dimen name="yami_space_xs">4dp</dimen>
+    <dimen name="yami_space_sm">8dp</dimen>
+    <dimen name="yami_space_md">12dp</dimen>
+    <dimen name="yami_space_lg">16dp</dimen>
+    <dimen name="yami_space_xl">20dp</dimen>
+    <dimen name="yami_space_xxl">28dp</dimen>
+
+    <!-- strokes / elevation -->
+    <dimen name="yami_stroke">1dp</dimen>
+    <dimen name="yami_stroke_focus">2dp</dimen>
+    <dimen name="yami_elevation_card">2dp</dimen>
+    <dimen name="yami_elevation_float">6dp</dimen>
+
+    <!-- component metrics -->
+    <dimen name="yami_card_padding">16dp</dimen>
+    <dimen name="yami_list_padding">14dp</dimen>
+    <dimen name="yami_touch_min">44dp</dimen>
+    <dimen name="yami_icon_btn">40dp</dimen>
+    <dimen name="yami_title_size">24sp</dimen>
+</resources>

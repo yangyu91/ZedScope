@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One row of the network log. IDs are contract with CaptureAdapter:
+     tvMethod tvStatus tvScheme tvUrl tvMeta dotLogin tvLoginFlag -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card_lg_ripple"
+    android:layout_marginBottom="@dimen/yami_space_md"
+    android:paddingStart="@dimen/yami_card_padding"
+    android:paddingEnd="@dimen/yami_card_padding"
+    android:paddingTop="@dimen/yami_space_md"
+    android:paddingBottom="@dimen/yami_space_md"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvMethod"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip_method"
+            android:paddingHorizontal="@dimen/yami_space_md"
+            android:paddingVertical="3dp"
+            android:text="GET"
+            android:textColor="@color/yami_accent"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:text="200"
+            android:textColor="@color/yami_on_surface_dim"
+            android:textSize="12sp"
+            android:fontFamily="monospace" />
+
+        <TextView
+            android:id="@+id/tvScheme"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:text="HTTPS"
+            android:textColor="@color/yami_accent_dim"
+            android:textSize="10sp"
+            android:letterSpacing="0.06" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <View
+            android:id="@+id/dotLogin"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="5dp"
+            android:background="@drawable/dot_login"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvLoginFlag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/flag_login"
+            android:textColor="@color/yami_warn"
+            android:textSize="10sp"
+            android:letterSpacing="0.08"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvUrl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/yami_space_sm"
+        android:text="https://example.com/api"
+        android:textColor="@color/yami_on_surface"
+        android:textSize="13sp"
+        android:lineSpacingExtra="2dp"
+        android:maxLines="2"
+        android:ellipsize="middle" />
+
+    <TextView
+        android:id="@+id/tvMeta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/yami_space_xs"
+        android:textColor="@color/yami_on_surface_faint"
+        android:textSize="11sp" />
+</LinearLayout>

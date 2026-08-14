@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One extracted credential. IDs are contract with TokenAdapter:
+     tvKey tvSource tvValue tvLoginFlag -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card_lg_ripple"
+    android:layout_marginBottom="@dimen/yami_space_md"
+    android:paddingStart="@dimen/yami_card_padding"
+    android:paddingEnd="@dimen/yami_card_padding"
+    android:paddingTop="@dimen/yami_space_md"
+    android:paddingBottom="@dimen/yami_space_md"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvKey"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="access_token"
+            android:textColor="@color/yami_accent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvSource"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:background="@drawable/bg_pill_surface"
+            android:paddingHorizontal="@dimen/yami_space_sm"
+            android:paddingVertical="2dp"
+            android:text="header"
+            android:textColor="@color/yami_on_surface_dim"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tvLoginFlag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:text="@string/flag_login"
+            android:textColor="@color/yami_warn"
+            android:textSize="10sp"
+            android:letterSpacing="0.08"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- value gets its own inner surface so long JWTs read like a code block -->
+    <TextView
+        android:id="@+id/tvValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/yami_space_sm"
+        android:background="@drawable/bg_card_raised"
+        android:padding="@dimen/yami_space_md"
+        android:text="eyJhbGciOi..."
+        android:textColor="@color/yami_on_surface"
+        android:textSize="12sp"
+        android:fontFamily="monospace"
+        android:lineSpacingExtra="2dp"
+        android:maxLines="3"
+        android:ellipsize="middle" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/yami_space_sm"
+        android:text="@string/tap_to_copy"
+        android:textColor="@color/yami_on_surface_faint"
+        android:textSize="10sp" />
+</LinearLayout>

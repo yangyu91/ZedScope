@@ -1,0 +1,100 @@
+<resources>
+    <string name="app_name">yami-UA</string>
+    <string name="nav_browser">浏览器</string>
+    <string name="nav_capture">抓包</string>
+    <string name="nav_token">Token</string>
+    <string name="nav_settings">设置</string>
+    <string name="hint_url">输入网址，例如 https://example.com</string>
+    <string name="btn_go">前往</string>
+    <string name="btn_copy_all">一键复制全部 Token</string>
+    <string name="btn_install_ca">安装抓包证书 (CA)</string>
+    <string name="btn_clear">清空抓包记录</string>
+    <string name="btn_start_proxy">启动抓包引擎</string>
+    <string name="toast_ca_saved">证书已保存，请在「网络与互联网 → 安装证书」中导入 yami-UA-CA.pem</string>
+    <string name="toast_copied">已复制 %1$d 个 Token 到剪贴板</string>
+    <string name="toast_proxy_started">抓包引擎已启动，WebView 流量将被拦截</string>
+    <string name="label_home">yami-UA 主页</string>
+    <string name="about">yami-UA · 内置抓包调试的轻量 AI 浏览器\n仅用于你有权调试的流量</string>
+    <string name="nav_ai">AI</string>
+    <string name="ai_title">内置 AI 中转站（OpenAI 兼容 · 免费白嫖）</string>
+    <string name="ai_provider_name">Provider 名</string>
+    <string name="ai_provider_base">Base URL (如 https://api.openai.com/v1)</string>
+    <string name="ai_provider_key">API Key（可空）</string>
+    <string name="ai_provider_model">模型</string>
+    <string name="ai_add">添加</string>
+    <string name="ai_deepseek_bridge">DeepSeek 网页白嫖（导出当前网页 cookie）</string>
+    <string name="ai_analyze_last">用 AI 分析最近一条抓包</string>
+    <string name="ai_input_hint">让 AI 完成任务，例如：打开 example.com 并登录，把 token 复制给我</string>
+    <string name="ai_run">运行 Agent</string>
+    <string name="ai_output_placeholder">AI 输出会显示在这里…</string>
+
+    <!-- new UI strings -->
+    <string name="flag_login">LOGIN</string>
+    <string name="tap_to_copy">点击复制到剪贴板</string>
+    <string name="cd_back">后退</string>
+    <string name="cd_forward">前进</string>
+    <string name="cd_refresh">刷新</string>
+    <string name="cd_menu">菜单</string>
+    <string name="empty_capture">还没有抓到任何请求\n用上方浏览器访问网页后，请求会实时出现在这里</string>
+    <string name="empty_token">还没有提取到 Token\n登录任意网站后，检测到的凭证会自动归集到这里</string>
+    <string name="section_capture">流量抓包</string>
+    <string name="section_token">凭证提取</string>
+    <string name="section_settings">设置</string>
+    <string name="settings_engine">抓包引擎</string>
+    <string name="settings_security">安全与证书</string>
+    <string name="settings_about">关于</string>
+    <string name="stat_requests">请求</string>
+    <string name="stat_tokens">Token</string>
+    <string name="stat_logins">登录</string>
+    <string name="chat_send">发送</string>
+
+    <!-- v2 settings strings -->
+    <string name="copy_all">复制全部</string>
+    <string name="settings_capture_clean">纯净抓包（过滤内部流量）</string>
+    <string name="settings_capture_clean_desc">隐藏 yami-UA 自身、AI 中转与代理池等无关流量，只保留你的浏览记录</string>
+    <string name="settings_vpn">全局抓包（实验 DEMO）</string>
+    <string name="settings_vpn_desc">通过 VpnService 拦截设备内全部 App 的流量（不仅是浏览器）</string>
+    <string name="vpn_status_off">已关闭 · 仅浏览器内抓包</string>
+    <string name="vpn_status_on">已开启 · 正在拦截全部 App 流量</string>
+    <string name="vpn_permission_required">需要 VPN 权限才能全局抓包</string>
+    <string name="settings_proxy_addr">抓包代理地址：%1$s</string>
+    <string name="toast_vpn_started">全局抓包已启动（DEMO）</string>
+    <string name="toast_vpn_stopped">全局抓包已关闭</string>
+    <string name="section_vpn">全局抓包</string>
+
+    <!-- v2.1: 浏览器可用化 + 证书一键安装 -->
+    <string name="home_title">yami-UA 浏览器</string>
+    <string name="home_subtitle">内置抓包调试的轻量 AI 浏览器</string>
+    <string name="home_bookmarks">常用入口</string>
+    <string name="home_ca_hint">抓包前请先安装证书，否则 HTTPS 网站无法拦截</string>
+    <string name="home_install_ca">安装抓包证书</string>
+    <string name="toast_ca_installing">正在打开证书安装器，请命名为 yami-UA 并设为「用于 VPN 和应用」</string>
+    <string name="cert_path_hint">证书已保存到：%1$s\n可在「设置 → 安全 → 安装证书」手动选择</string>
+    <string name="toast_ca_install_failed">无法自动安装，证书已存到 %1$s，请到系统设置手动安装</string>
+    <string name="capture_empty_banner">抓包为空？多半是证书没装 →</string>
+    <string name="settings_ca_path">证书文件路径</string>
+
+    <!-- v2.1: 省 token 模式（抄 Reasonix compact_ratio） -->
+    <string name="ai_compact">省 token 模式</string>
+    <string name="ai_compact_desc">用密钥 token 时自动开启：多轮对话压缩为「前缀+摘要+近期」，大幅省上下文</string>
+    <string name="ai_compact_ratio">压缩比 (compact_ratio)</string>
+    <string name="ai_session">会话</string>
+    <string name="ai_session_new">新建会话</string>
+    <string name="ai_session_current">当前会话</string>
+    <string name="ai_compact_on_toast">已开启省 token 模式（用密钥 token 自动省）</string>
+    <string name="ai_send">发送</string>
+    <string name="ai_agent_run">Agent 操控浏览器</string>
+
+    <!-- v2.2 UI：浏览器为主 + 网络日志（借鉴嗅觉浏览器形态） -->
+    <string name="capture_subtitle">实时网络日志 · 下拉刷新 · 点条目复制请求详情</string>
+    <string name="token_subtitle">从抓包里自动归集的凭证 · 点卡片复制</string>
+    <string name="home_open_capture">网络日志</string>
+    <string name="home_open_capture_desc">实时请求 / 响应 · Token 自动归集</string>
+
+    <!-- v2.2 UI 定制（planned feature，schema 见 assets/ui.schema.json） -->
+    <string name="section_ui_custom">界面定制</string>
+    <string name="nav_ui_custom">界面定制</string>
+    <string name="ui_custom_desc">在起始页点右上角「界面定制」可调强调色、圆角、间距密度与各 UI 区块的显示，配置按 ui.json 结构保存。</string>
+    <string name="ui_custom_path">assets/ui.json · assets/ui.schema.json</string>
+    <string name="ui_custom_saved">界面配置已保存</string>
+</resources>

@@ -1,0 +1,7 @@
+<!-- Accent (green) tonal pill: active states, "engine on" badges. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/yami_accent_soft" />
+    <corners android:radius="@dimen/yami_radius_pill" />
+    <stroke android:width="@dimen/yami_stroke" android:color="@color/yami_accent_dim" />
+</shape>

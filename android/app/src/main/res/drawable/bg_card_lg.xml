@@ -1,0 +1,7 @@
+<!-- Large-radius surface card (SukiSU-style). Pure style resource. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/yami_surface" />
+    <corners android:radius="@dimen/yami_radius_lg" />
+    <stroke android:width="@dimen/yami_stroke" android:color="@color/yami_divider" />
+</shape>

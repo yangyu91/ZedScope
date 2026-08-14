@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chat row. IDs: tvRole tvBubble -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="@dimen/yami_space_md">
+
+    <TextView
+        android:id="@+id/tvRole"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI"
+        android:textColor="@color/yami_on_surface_faint"
+        android:textSize="10sp"
+        android:letterSpacing="0.08"
+        android:layout_marginBottom="@dimen/yami_space_xs"
+        android:layout_marginStart="@dimen/yami_space_md" />
+
+    <TextView
+        android:id="@+id/tvBubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="300dp"
+        android:background="@drawable/bg_bubble_ai"
+        android:padding="@dimen/yami_space_md"
+        android:text="消息内容"
+        android:textColor="@color/yami_on_surface"
+        android:textSize="14sp"
+        android:lineSpacingExtra="3dp"
+        android:textIsSelectable="true" />
+</LinearLayout>

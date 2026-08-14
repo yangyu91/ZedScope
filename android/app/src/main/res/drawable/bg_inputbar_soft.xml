@@ -1,0 +1,13 @@
+<!-- Bottom input bar (AI panel): surface + top hairline, no shadow. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/yami_surface" />
+        </shape>
+    </item>
+    <item android:gravity="top" android:height="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/yami_divider" />
+        </shape>
+    </item>
+</layer-list>

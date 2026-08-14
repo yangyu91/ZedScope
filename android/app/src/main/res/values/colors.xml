@@ -1,0 +1,55 @@
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- =====================================================================
+         yami-UA design tokens · SukiSU-inspired "neutral dark + green accent"
+
+         Surfaces are neutral (slightly cool) greys so the green accent is the
+         only saturated colour on screen. The accent is still overridden by
+         Material You dynamic colour on Android 12+; everything below is the
+         pre-12 fallback AND the palette used by the WebView pages
+         (assets/ui-tokens.css keeps the same hex values in sync).
+         ===================================================================== -->
+
+    <!-- surface ramp (bg -> highest) -->
+    <color name="yami_bg">#FF0E0F11</color>
+    <color name="yami_surface">#FF15171A</color>
+    <color name="yami_surface_2">#FF1B1E22</color>
+    <color name="yami_surface_3">#FF22262B</color>
+    <color name="yami_surface_4">#FF2A2F35</color>
+    <!-- translucent surface for sheets / banners over the WebView -->
+    <color name="yami_surface_glass">#E615171A</color>
+
+    <!-- content on surfaces -->
+    <color name="yami_on_surface">#FFECEFF1</color>
+    <color name="yami_on_surface_dim">#FF9AA3AB</color>
+    <color name="yami_on_surface_faint">#FF6B747C</color>
+
+    <!-- accent: Material green (dark-scheme tuned). Overridden by dynamic colour. -->
+    <color name="yami_accent">#FF6EDB8F</color>
+    <color name="yami_accent_dim">#FF3FBF74</color>
+    <color name="yami_accent_soft">#FF14291F</color>
+    <color name="yami_accent_soft_2">#FF1B3A2A</color>
+    <!-- readable content colour on top of the accent fill -->
+    <color name="yami_on_accent">#FF04240F</color>
+    <color name="yami_on_accent_soft">#FFA8F5C4</color>
+    <!-- glow / ripple / focus (alpha-baked so drawables stay simple) -->
+    <color name="yami_accent_glow">#4D6EDB8F</color>
+    <color name="yami_accent_ripple">#336EDB8F</color>
+
+    <!-- semantic -->
+    <color name="yami_danger">#FFFF8A8A</color>
+    <color name="yami_danger_soft">#FF33191B</color>
+    <color name="yami_warn">#FFFFC857</color>
+    <color name="yami_warn_soft">#FF33280F</color>
+    <color name="yami_info">#FF6CC6FF</color>
+    <color name="yami_info_soft">#FF12242F</color>
+    <color name="yami_success">#FF6EDB8F</color>
+
+    <!-- lines, scrims, soft shadow -->
+    <color name="yami_divider">#FF262A30</color>
+    <color name="yami_divider_soft">#1AFFFFFF</color>
+    <color name="yami_scrim">#CC0E0F11</color>
+    <color name="yami_shadow">#59000000</color>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Trust both system and USER-installed CAs. Without this, Android 7+ WebView
+  refuses user CAs, so the yami-UA MITM leaf cert (installed as a user CA) is
+  rejected and every HTTPS site fails to load / capture nothing. This is what
+  makes in-app capture actually work after the user installs the cert.
+-->
+<network-security-config>
+    <base-config>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
