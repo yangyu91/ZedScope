@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -64,6 +66,13 @@ class MainActivity : AppCompatActivity() {
     private var currentPanel = 0
     private var currentSessionId = ""   // 当前 AI 会话（省token）
     private lateinit var captureBanner: TextView   // 浏览器内"抓包为空"引导
+
+    // 对话式 AI 面板
+    private lateinit var chatAdapter: ChatAdapter
+    private lateinit var rvChat: RecyclerView
+    private lateinit var tvChatEmpty: TextView
+    private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
+    private val chatHandler = Handler(Looper.getMainLooper())
 
     // v2 DEMO: VPN permission launcher for global (all-app) capture.
     private val vpnPermission = registerForActivityResult(
@@ -190,6 +199,7 @@ class MainActivity : AppCompatActivity() {
                 // App-internal actions from the home page.
                 if (u.startsWith("yami://install-ca")) { installCa(); return true }
                 if (u.startsWith("yami://capture")) { showPanel(1); return true }
+                if (u.startsWith("yami://ai")) { showPanel(4); return true }
                 if (u.startsWith("yami://settings")) { showPanel(3); return true }
                 view?.loadUrl(u)
                 return true
@@ -313,12 +323,21 @@ class MainActivity : AppCompatActivity() {
         val base = findViewById<EditText>(R.id.etProviderBase)
         val key = findViewById<EditText>(R.id.etProviderKey)
         val model = findViewById<EditText>(R.id.etProviderModel)
-        val out = findViewById<TextView>(R.id.tvAiOutput)
         val etInput = findViewById<EditText>(R.id.etAiInput)
-        val aiScroll = findViewById<View>(R.id.aiOutputScroll)
         val switchCompact = findViewById<MaterialSwitch>(R.id.switchCompact)
         val etRatio = findViewById<EditText>(R.id.etCompactRatio)
         val tvSession = findViewById<TextView>(R.id.tvSession)
+
+        // 对话气泡列表 + 快捷任务模板
+        rvChat = findViewById(R.id.rvChat)
+        tvChatEmpty = findViewById(R.id.tvChatEmpty)
+        chipTasks = findViewById(R.id.chipTasks)
+        chatAdapter = ChatAdapter()
+        rvChat.layoutManager = LinearLayoutManager(this)
+        rvChat.itemAnimator = null
+        rvChat.adapter = chatAdapter
+        updateChatEmpty()
+        buildTaskChips()
 
         // 省token 模式（抄 Reasonix compact_ratio）：默认关，用密钥 token 时自动开
         switchCompact.setOnCheckedChangeListener { _, isChecked ->
@@ -336,6 +355,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnNewSession).setOnClickListener {
             currentSessionId = YamiCore.aiSessionNew()
             tvSession.text = currentSessionId
+            chatAdapter.clear()
+            updateChatEmpty()
             Toast.makeText(this, "已新建会话", Toast.LENGTH_SHORT).show()
         }
 
@@ -377,9 +398,15 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnAnalyze).setOnClickListener {
             val caps = YamiCore.captures()
             val id = if (caps.isNotEmpty()) caps.last().id.toString() else ""
+            chatAdapter.add(ChatMsg("user", "分析最近一条抓包（token 泄露 / 注入风险 + 可复制 curl）"))
+            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
+            updateChatEmpty()
             Thread {
                 val r = YamiCore.aiAnalyze(id, "请分析这条请求：有无 token 泄露/注入风险？给可复制的 curl。")
-                runOnUiThread { out.text = r }
+                runOnUiThread {
+                    chatAdapter.updateLast(r.ifBlank { "（暂无抓包数据，先去浏览器访问网页）" })
+                    rvChat.scrollToPosition(chatAdapter.itemCount - 1)
+                }
             }.start()
         }
 
@@ -388,27 +415,19 @@ class MainActivity : AppCompatActivity() {
             val task = etInput.text.toString().trim()
             if (task.isBlank()) return@setOnClickListener
             if (currentSessionId.isBlank()) { currentSessionId = YamiCore.aiSessionNew(); tvSession.text = currentSessionId }
+            etInput.setText("")
+            chatAdapter.add(ChatMsg("user", task))
+            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
+            updateChatEmpty()
             Thread {
                 val r = YamiCore.aiChatSession(currentSessionId, task)
-                runOnUiThread {
-                    out.text = "你：$task\n\nAI：$r"
-                    aiScroll.post { aiScroll.scrollTo(0, out.bottom) }
-                }
+                runOnUiThread { streamInto(r.ifBlank { "（AI 未返回内容）" }) }
             }.start()
         }
 
         // Agent 操控浏览器（也在会话里，省token）
         findViewById<View>(R.id.btnAgentRun).setOnClickListener {
-            val task = etInput.text.toString().trim()
-            if (task.isBlank()) return@setOnClickListener
-            if (currentSessionId.isBlank()) { currentSessionId = YamiCore.aiSessionNew(); tvSession.text = currentSessionId }
-            Thread {
-                val r = YamiCore.aiAgentRunSession(currentSessionId, task)
-                runOnUiThread {
-                    out.text = "Agent：$task\n\n$r"
-                    aiScroll.post { aiScroll.scrollTo(0, out.bottom) }
-                }
-            }.start()
+            runAgentTask(etInput.text.toString().trim())
         }
 
         // ---- SSH 会话类型：连接远程主机并在其上执行命令 ----
@@ -440,13 +459,73 @@ class MainActivity : AppCompatActivity() {
             val cmd = etInput.text.toString().trim()
             if (cmd.isBlank()) return@setOnClickListener
             if (sshId.isBlank()) { tvSshStatus.text = "请先连接 SSH"; return@setOnClickListener }
+            chatAdapter.add(ChatMsg("user", "SSH $sshId \$ $cmd"))
+            chatAdapter.add(ChatMsg("ai", getString(R.string.ai_thinking)))
+            updateChatEmpty()
             Thread {
                 val r = YamiCore.aiSshExec(sshId, cmd)
                 runOnUiThread {
-                    out.text = "SSH $sshId \$ $cmd\n$r"
-                    aiScroll.post { aiScroll.scrollTo(0, out.bottom) }
+                    chatAdapter.updateLast(r.ifBlank { "（无输出）" })
+                    rvChat.scrollToPosition(chatAdapter.itemCount - 1)
                 }
             }.start()
+        }
+    }
+
+    private fun runAgentTask(task: String) {
+        if (task.isBlank()) return
+        if (currentSessionId.isBlank()) { currentSessionId = YamiCore.aiSessionNew(); tvSession.text = currentSessionId }
+        etInput.setText("")
+        chatAdapter.add(ChatMsg("user", task))
+        chatAdapter.add(ChatMsg("ai", getString(R.string.ai_agent_thinking)))
+        updateChatEmpty()
+        Thread {
+            val r = YamiCore.aiAgentRunSession(currentSessionId, task)
+            runOnUiThread { streamInto(r.ifBlank { "（Agent 未返回内容）" }) }
+        }.start()
+    }
+
+    /** 打字机式流式：把完整文本逐帧写入最后一个 AI 气泡。 */
+    private fun streamInto(full: String) {
+        if (full.isBlank()) { chatAdapter.updateLast("（无内容）"); return }
+        chatHandler.removeCallbacksAndMessages(null)
+        var shown = 0
+        val step = 4
+        val runnable = object : Runnable {
+            override fun run() {
+                shown = minOf(full.length, shown + step)
+                chatAdapter.updateLast(full.substring(0, shown))
+                rvChat.scrollToPosition(chatAdapter.itemCount - 1)
+                if (shown < full.length) chatHandler.postDelayed(this, 18)
+            }
+        }
+        chatHandler.post(runnable)
+    }
+
+    private fun updateChatEmpty() {
+        val empty = chatAdapter.isEmpty()
+        tvChatEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+        rvChat.visibility = if (empty) View.GONE else View.VISIBLE
+    }
+
+    private fun buildTaskChips() {
+        val templates = listOf(
+            "打开目标网站并登录，把登录后的 token 复制给我",
+            "分析最近一条抓包：有无 token 泄露 / 注入风险，给可复制的 curl",
+            "在当前页面找到所有表单并自动填入测试数据",
+            "总结当前打开的网页的核心内容"
+        )
+        chipTasks.removeAllViews()
+        templates.forEach { t ->
+            val chip = com.google.android.material.chip.Chip(this).apply {
+                text = t
+                isClickable = true
+                setOnClickListener {
+                    etInput.setText(t)
+                    runAgentTask(t)
+                }
+            }
+            chipTasks.addView(chip)
         }
     }
 

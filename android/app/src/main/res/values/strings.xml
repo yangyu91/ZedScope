@@ -98,6 +98,12 @@
     <string name="ui_custom_path">assets/ui.json · assets/ui.schema.json</string>
     <string name="ui_custom_saved">界面配置已保存</string>
 
+    <!-- v2.3 对话式 AI 面板 -->
+    <string name="ai_chat_empty">还没有对话\n先在上方配置 Provider（或用 DeepSeek 白嫖），再到下方输入任务</string>
+    <string name="ai_task_placeholder">例如：打开 github.com 并登录，把 token 复制给我</string>
+    <string name="ai_thinking">AI 正在思考…</string>
+    <string name="ai_agent_thinking">Agent 执行中…</string>
+
     <!-- SSH 会话类型 -->
     <string name="ssh_title">SSH 会话</string>
     <string name="ssh_host">主机 (host:port)</string>

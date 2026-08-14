@@ -44,6 +44,11 @@
   a.primary .t { font-size:15px; font-weight:600 }
   a.primary .d { font-size:11.5px; color:var(--dim); margin-top:2px }
   a.primary .go { color:var(--accent); font-size:18px; flex:0 0 auto }
+  /* AI 对话入口：用实色强调，区别于网络日志的柔和卡 */
+  a.primary.ai { background:var(--accent); color:var(--on-accent); border-color:var(--accent); box-shadow:0 6px 22px var(--accent-glow); }
+  a.primary.ai .ico { background:var(--on-accent); color:var(--accent); }
+  a.primary.ai .d { color:rgba(4, 36, 15, .72); }
+  a.primary.ai .go { color:var(--on-accent); }
 
   .grid { display:grid; gap:var(--s-md); grid-template-columns:repeat(var(--cols,2), minmax(0,1fr)) }
   a.site {
@@ -103,6 +108,22 @@
       <span style="flex:1 1 auto; min-width:0">
         <span class="t">网络日志</span>
         <span class="d">实时请求 / 响应 · Token 自动归集 · 点条目复制详情</span>
+      </span>
+      <span class="go">›</span>
+    </a>
+
+    <!-- 主行动 2：AI 对话 / 办事（新增，跳 AI 面板） -->
+    <a class="primary ai" href="yami://ai">
+      <span class="ico">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z"/>
+          <path d="M19 14l.9 2.2L22 17l-2.1.8L19 20l-.9-2.2L16 17l2.1-.8z"/>
+        </svg>
+      </span>
+      <span style="flex:1 1 auto; min-width:0">
+        <span class="t">AI 对话 / 办事</span>
+        <span class="d">直接对话，或让 Agent 替你操作浏览器、抓包、SSH</span>
       </span>
       <span class="go">›</span>
     </a>

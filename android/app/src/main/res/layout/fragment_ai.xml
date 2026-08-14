@@ -3,7 +3,7 @@
   AI panel. IDs are contract with MainActivity.setupAiPanel():
   etProviderName etProviderBase etProviderKey etProviderModel btnAddProvider
   switchCompact etCompactRatio tvSession btnNewSession btnDeepseekBridge
-  btnAnalyze btnAgentRun aiOutputScroll tvAiOutput etAiInput btnAiRun
+  btnAnalyze btnAgentRun etAiInput btnAiRun chipTasks rvChat tvChatEmpty
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -429,9 +429,26 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- Chat / output area -->
-    <ScrollView
-        android:id="@+id/aiOutputScroll"
+    <!-- 快捷任务模板（基于 agent 可用动作动态生成） -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginTop="@dimen/yami_space_md"
+        android:paddingStart="@dimen/yami_list_padding"
+        android:paddingEnd="@dimen/yami_list_padding"
+        android:clipToPadding="false">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipTasks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:chipSpacingHorizontal="@dimen/yami_space_sm" />
+    </HorizontalScrollView>
+
+    <!-- 对话气泡列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvChat"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -439,22 +456,20 @@
         android:layout_marginEnd="@dimen/yami_list_padding"
         android:layout_marginTop="@dimen/yami_space_md"
         android:clipToPadding="false"
-        android:scrollbars="none">
+        android:scrollbars="vertical" />
 
-        <TextView
-            android:id="@+id/tvAiOutput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_bubble_ai"
-            android:padding="@dimen/yami_card_padding"
-            android:text="@string/ai_output_placeholder"
-            style="@style/Yami.Text.Body"
-            android:textSize="14sp"
-            android:lineSpacingExtra="3dp"
-            android:autoLink="web"
-            android:linksClickable="true"
-            android:textIsSelectable="true" />
-    </ScrollView>
+    <TextView
+        android:id="@+id/tvChatEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:layout_marginStart="@dimen/yami_space_xxl"
+        android:layout_marginEnd="@dimen/yami_space_xxl"
+        android:lineSpacingExtra="4dp"
+        android:text="@string/ai_chat_empty"
+        style="@style/Yami.Text.Dim"
+        android:visibility="gone" />
 
     <!-- Input bar -->
     <LinearLayout
