@@ -187,12 +187,17 @@ curl -X POST http://127.0.0.1:8910/ai/analyze \
 | 6 | `Widget.Material3.TextInputEditText` 裸名不存在 → 样式解析失败 | 必须带后缀 `.FilledBox`（即 `Widget.Material3.TextInputEditText.FilledBox`）|
 | 7 | `themes.xml` 里自定义 `colorBackground` 属性 → Material3 无此属性 | 删掉 `colorBackground` / `android:colorBackground`；布局改用 `?attr/colorSurface` |
 | 8 | VPN `addDisallowedApplication` 不在 `VpnService.Builder` 上 | 必须 `builder.addDisallowedApplication(packageName)` |
-| 9 | `establish()` 返回值当 `fileDescriptor` 用 → 类型错 | `fd = established.fileDescriptor`，转发器传 `established.fileDescriptor` |
-| 10 | `sendTcp(..., ack = true, ...)` 参数名错 → 编译错 | 定义是 `sendTcp(conn, seq, ack, syn, ackF, fin, payload)`，用 `ackF = true` |
-| 11 | `go get golang.org/x/crypto@latest` 把 `go.mod` 升到 go 1.25，CI 工具链不够 → `toolchain not available` | **pin** `golang.org/x/crypto v0.31.0` + `go 1.22`（兼容 CI 的 go 1.22）；本地用缓存的 `go1.25.13` 工具链验证（`GOTOOLCHAIN=go1.25.13`）|
+| 9 | `establish()` 返回值类型用错 → `onDestroy` 里 `FileDescriptor.close()` 是 API 33+，低版本 `NoSuchMethodError` | 用 `ParcelFileDescriptor` 保存 `established`，`onDestroy` 里 `pfd?.close()`（API 1+ 都有）|
+| 10 | `sendTcp(..., ack = true, ...)` 参数名错 → 编译错 | 定义是 `sendTcp(conn, seq, ack, syn, ackF, fin, payload)`，用 `ackF = true`；`fin` 已加默认值 `= false` |
+| 11 | `go get golang.org/x/crypto@latest` 把 `go.mod` 升到 go 1.25，CI 工具链不够 → `toolchain not available` | **pin** `golang.org/x/crypto v0.31.0`（兼容 go 1.22~1.25）；CI 的 `setup-go` 已升到 `1.25`（`x/mobile@latest` 需 ≥ 1.25），不再触发工具链下载 |
 | 12 | 空仓库首次 push 409 | `push.sh` 已处理；本地用 `git` 初始化提交后再推 |
+| 13 | `ProxyController` 用了平台类 `android.webkit.ProxyController`，但其 `setProxyOverride` 只接受 `androidx.webkit.ProxyConfig` → 类型不匹配编译错 | 统一用 `androidx.webkit.ProxyController.getInstance()`（配 `import androidx.webkit.ProxyController`），与 `androidx.webkit.ProxyConfig` 同源 |
+| 14 | `RecyclerView.Adapter` 子类里裸写 `getSystemService(CLIPBOARD_SERVICE)` → `Unresolved reference`（常量属于 `Context`） | Adapter 内写全限定 `getSystemService(android.content.Context.CLIPBOARD_SERVICE)`；Activity 方法内（继承 Context）可直接用 `CLIPBOARD_SERVICE` |
+| 15 | `sendTcp` 三处调用（`VpnForwarder` 122/138/181）漏传必填 `fin` → `No value passed for parameter 'fin'` | `fin` 加默认值 `= false`，调用处不传即默认 false（显式 `fin = true` 仍有效）|
+| 16 | `VpnCaptureService` 在 `onDestroy` 调 `FileDescriptor.close()`（API 33+），Android 8~12 崩溃 | 见 #9：`ParcelFileDescriptor` 保存并 `pfd?.close()` |
+| 17 | `builder.allowFamily(...)` 是 API 28+，Android 7/8 启动 VPN 崩 | 加 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.P` 守卫，低版本跳过 |
 
-> **防回归红线**：CI 用 go 1.22，`go.mod` 的 `go` 指令**必须 ≤ 1.22** 且 `crypto` 必须 pin 在 `v0.31.0`。任何把 `go get x/crypto@latest` 或 `go mod tidy` 跑进提交的动作都会再次触发 #11。
+> **防回归红线**：`go.mod` 的 `crypto` 必须 pin 在 `v0.31.0`，`gomobile` 必须在依赖图且**不能 `go mod tidy`**（见 #3）。`ProxyController`/`ProxyConfig` 必须**都用 androidx.webkit 同源**；`Adapter` 内 `CLIPBOARD_SERVICE` 必须全限定；`sendTcp` 的 `fin` 参数保持默认值。任何把 `go get x/crypto@latest`、`go mod tidy`、或把 androidx 类改回平台类的动作都会再次触发对应错误。
 
 ---
 
