@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var etUrl: EditText
     private lateinit var etInput: EditText   // AI 输入：setupAiPanel 赋值，runAgentTask 等成员函数也用
+    private lateinit var tvSession: TextView   // 会话 ID 展示：setupAiPanel 赋值，runAgentTask 也用
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var flBrowser: android.widget.FrameLayout
     private lateinit var flCapture: android.widget.FrameLayout
@@ -324,10 +325,10 @@ class MainActivity : AppCompatActivity() {
         val base = findViewById<EditText>(R.id.etProviderBase)
         val key = findViewById<EditText>(R.id.etProviderKey)
         val model = findViewById<EditText>(R.id.etProviderModel)
-        etInput = findViewById(R.id.etAiInput)
+        etInput = findViewById<EditText>(R.id.etAiInput)
         val switchCompact = findViewById<MaterialSwitch>(R.id.switchCompact)
         val etRatio = findViewById<EditText>(R.id.etCompactRatio)
-        val tvSession = findViewById<TextView>(R.id.tvSession)
+        tvSession = findViewById<TextView>(R.id.tvSession)
 
         // 对话气泡列表 + 快捷任务模板
         rvChat = findViewById(R.id.rvChat)
