@@ -273,7 +273,7 @@ class VpnForwarder(
 
     // Build a TCP segment (20-byte header + payload) and emit it as a forged
     // IPv4 packet: src = the real server (original dst), dst = the app.
-    private fun sendTcp(conn: Connection, seq: Long, ack: Long, syn: Boolean, ackF: Boolean, fin: Boolean, payload: ByteArray) {
+    private fun sendTcp(conn: Connection, seq: Long, ack: Long, syn: Boolean, ackF: Boolean, fin: Boolean = false, payload: ByteArray) {
         val tcpTotal = 20 + payload.size
         val seg = ByteArray(tcpTotal)
         writeShort(seg, 0, conn.key.dstPort) // src port = original destination port

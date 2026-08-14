@@ -29,6 +29,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.materialswitch.MaterialSwitch
 import androidx.core.content.FileProvider
 import androidx.webkit.ProxyConfig
+import androidx.webkit.ProxyController
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -164,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                     .addProxyRule(YamiCore.proxyAddr())
                     .build()
                 val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
-                android.webkit.ProxyController.getInstance()
+                androidx.webkit.ProxyController.getInstance()
                     .setProxyOverride(config, executor, java.lang.Runnable { })
             } catch (e: Throwable) {
                 // Proxy override is best-effort; never let it crash startup.
@@ -569,7 +570,7 @@ class CaptureAdapter : RecyclerView.Adapter<CaptureAdapter.VH>() {
                 append("tokens: ${r.tokens.size}\n")
                 r.tokens.forEach { append("  ${it.key} = ${it.value}\n") }
             }
-            val cm = holder.itemView.context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
             cm.setPrimaryClip(ClipData.newPlainText("yami-request", detail))
             Toast.makeText(holder.itemView.context, "已复制请求详情", Toast.LENGTH_SHORT).show()
         }
@@ -602,7 +603,7 @@ class TokenAdapter : RecyclerView.Adapter<TokenAdapter.VH>() {
         holder.tvValue.text = t.value
         holder.tvLoginFlag.visibility = if (t.is_login) View.VISIBLE else View.GONE
         holder.itemView.setOnClickListener {
-            val cm = holder.itemView.context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
             cm.setPrimaryClip(ClipData.newPlainText(t.key, t.value))
             Toast.makeText(holder.itemView.context, "已复制 ${t.key}", Toast.LENGTH_SHORT).show()
         }

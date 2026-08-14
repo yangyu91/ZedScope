@@ -2,7 +2,8 @@ package com.yamiua.app
 
 import android.content.Intent
 import android.net.VpnService
-import java.io.FileDescriptor
+import android.os.Build
+import android.os.ParcelFileDescriptor
 
 /**
  * v2 DEMO — global (all-app) capture via VpnService.
@@ -18,7 +19,7 @@ class VpnCaptureService : VpnService() {
 
     private var forwarder: VpnForwarder? = null
     private var thread: Thread? = null
-    private var fd: FileDescriptor? = null
+    private var pfd: ParcelFileDescriptor? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val proxy = intent?.getStringExtra("proxy") ?: "127.0.0.1:8899"
@@ -31,7 +32,7 @@ class VpnCaptureService : VpnService() {
             .addRoute("0.0.0.0", 0)
             .addDnsServer("10.0.0.1")
             .setMtu(1500)
-            .allowFamily(android.system.OsConstants.AF_INET)
+            .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) allowFamily(android.system.OsConstants.AF_INET) }
         try {
             // exclude our own app so the proxy/AI egress doesn't loop
             builder.addDisallowedApplication(packageName)
@@ -43,7 +44,7 @@ class VpnCaptureService : VpnService() {
             stopSelf()
             return START_NOT_STICKY
         }
-        fd = established.fileDescriptor
+        pfd = established
         forwarder = VpnForwarder(established.fileDescriptor, host, port, this)
         thread = Thread(forwarder, "yami-vpn").also { it.start() }
         return START_STICKY
@@ -53,7 +54,7 @@ class VpnCaptureService : VpnService() {
         forwarder?.stop()
         thread?.interrupt()
         try {
-            fd?.close()
+            pfd?.close()
         } catch (_: Exception) {
         }
         super.onDestroy()
