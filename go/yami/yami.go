@@ -29,7 +29,11 @@ func Start(listenProxy, listenAPI string) string {
 	if core != nil {
 		return "already started"
 	}
-	core = proxy.New(listenProxy)
+	var err error
+	core, err = proxy.New(listenProxy)
+	if err != nil {
+		return "err: " + err.Error()
+	}
 	apiSrv = api.NewAPI(core)
 	go func() {
 		if err := core.Listen(); err != nil {

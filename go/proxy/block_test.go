@@ -114,7 +114,7 @@ func TestBlockIntegration(t *testing.T) {
 	}))
 	defer target.Close()
 
-	p := New("127.0.0.1:8898")
+	p, _ := New("127.0.0.1:8898")
 	p.Filter.SetEnabled(false)
 	if err := p.SetRules(RulesConfig{Block: []BlockRule{{URLRegex: `blocked\.test`}}}); err != nil {
 		t.Fatal(err)

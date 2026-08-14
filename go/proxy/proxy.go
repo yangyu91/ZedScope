@@ -23,6 +23,8 @@
 package proxy
 
 import (
+	"fmt"
+
 	"crypto/tls"
 	"io"
 	"log"
@@ -58,9 +60,13 @@ type Proxy struct {
 }
 
 // New constructs a Proxy listening on addr (e.g. "127.0.0.1:8899").
-func New(addr string) *Proxy {
+func New(addr string) (*Proxy, error) {
+	ca, err := ca.NewCA()
+	if err != nil {
+		return nil, fmt.Errorf("ca: %w", err)
+	}
 	p := &Proxy{
-		CA:     ca.NewCA(),
+		CA:     ca,
 		Store:  NewStore(2000),
 		Mods:   NewModifyRules(),
 		Filter: DefaultFilter(), // clean capture ON by default
@@ -69,7 +75,7 @@ func New(addr string) *Proxy {
 		bodyDir: defaultBodyDir(),
 	}
 	p.client = newUpstreamClient("")
-	return p
+	return p, nil
 }
 
 // CAPEM returns the root CA certificate (PEM) for the user to install.

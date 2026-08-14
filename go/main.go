@@ -16,7 +16,10 @@ func main() {
 	apiAddr := flag.String("api", "127.0.0.1:8900", "API listen address")
 	flag.Parse()
 
-	p := proxy.New(*proxyAddr)
+	p, err := proxy.New(*proxyAddr)
+	if err != nil {
+		log.Fatalf("proxy: %v", err)
+	}
 	a := api.NewAPI(p)
 
 	go func() {

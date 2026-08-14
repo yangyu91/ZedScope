@@ -15,6 +15,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -29,11 +30,13 @@ type CA struct {
 	cache   map[string][]byte // host -> PEM(cert)+PEM(key)
 }
 
-// NewCA generates a fresh root CA.
-func NewCA() *CA {
+// NewCA generates a fresh root CA. Errors are returned instead of panicked:
+// a panic here would surface as a native SIGABRT on Android (Go runtime abort)
+// that Kotlin try/catch cannot catch — i.e. a hard crash on launch.
+func NewCA() (*CA, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("generate key: %w", err)
 	}
 	tmpl := &x509.Certificate{
 		SerialNumber:          big.NewInt(1),
@@ -46,15 +49,18 @@ func NewCA() *CA {
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("create cert: %w", err)
 	}
-	cert, _ := x509.ParseCertificate(der)
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		return nil, fmt.Errorf("parse cert: %w", err)
+	}
 	return &CA{
 		cert:    cert,
 		key:     key,
 		certPEM: string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})),
 		cache:   map[string][]byte{},
-	}
+	}, nil
 }
 
 // CertPEM returns the PEM-encoded root certificate for the user to install.

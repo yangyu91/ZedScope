@@ -59,7 +59,10 @@ func main() {
 	reg.AddProvider(&ai.Provider{Name: "demo", BaseURL: be.URL, Model: "demo", Protocol: ai.ProtoOpenAI})
 
 	// Feed a synthetic captured login request into the store.
-	p := proxy.New("127.0.0.1:0")
+	p, err := proxy.New("127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
 	p.Store.Add(&proxy.Record{
 		Method: "POST", URL: "https://api.x.com/login", IsHTTPS: true,
 		ReqHeaders:  "Authorization: Bearer leaked-token-123",

@@ -22,7 +22,7 @@ func TestMITMCaptureLocalHTTP(t *testing.T) {
 	}))
 	defer target.Close()
 
-	p := New("127.0.0.1:8897")
+	p, _ := New("127.0.0.1:8897")
 	p.Filter.SetEnabled(false) // target is on localhost; keep it visible
 	go func() { _ = p.Listen() }()
 	time.Sleep(300 * time.Millisecond)
@@ -68,7 +68,7 @@ func TestMITMCaptureLocalHTTP(t *testing.T) {
 // TestUpstreamHTTP2Enabled verifies the v2 fix: the shared upstream transport
 // negotiates HTTP/2 to the origin instead of downgrading to HTTP/1.1.
 func TestUpstreamHTTP2Enabled(t *testing.T) {
-	p := New("127.0.0.1:8894")
+	p, _ := New("127.0.0.1:8894")
 	tr, ok := p.client.Transport.(*http.Transport)
 	if !ok {
 		t.Fatalf("unexpected transport type %T", p.client.Transport)
@@ -101,7 +101,7 @@ func TestLargeBodyCaptured(t *testing.T) {
 	}))
 	defer target.Close()
 
-	p := New("127.0.0.1:8893")
+	p, _ := New("127.0.0.1:8893")
 	p.Filter.SetEnabled(false)
 	go func() { _ = p.Listen() }()
 	time.Sleep(300 * time.Millisecond)
@@ -143,7 +143,7 @@ func TestFilterDropsLocalhost(t *testing.T) {
 	}))
 	defer target.Close()
 
-	p := New("127.0.0.1:8892")
+	p, _ := New("127.0.0.1:8892")
 	// filter is ON by default
 	go func() { _ = p.Listen() }()
 	time.Sleep(300 * time.Millisecond)

@@ -39,7 +39,7 @@ func TestMapIntegration(t *testing.T) {
 	}))
 	defer target.Close()
 
-	p := New("127.0.0.1:8899")
+	p, _ := New("127.0.0.1:8899")
 	p.Filter.SetEnabled(false)
 	if err := p.SetRules(RulesConfig{Map: []MapRule{
 		{URLRegex: `mock\.local`, Status: 200, Body: "local-mock-body", ContentType: "text/plain"},

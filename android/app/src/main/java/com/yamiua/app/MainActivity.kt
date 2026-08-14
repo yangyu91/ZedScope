@@ -31,6 +31,7 @@ import androidx.core.content.FileProvider
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
 import java.io.File
+import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -79,6 +80,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        maybeShowLastCrash()
+
         webView = findViewById(R.id.webview)
         etUrl = findViewById(R.id.etUrl)
         bottomNav = findViewById(R.id.bottomNav)
@@ -121,6 +124,21 @@ class MainActivity : AppCompatActivity() {
 
         setupAiPanel()
         loadHome()
+    }
+
+    /**
+     * 若上次运行留下崩溃日志(cacheDir/crash.log，由 YamiApplication 的全局
+     * 未捕获异常处理器写入)，提示用户反馈。注意 native 崩溃(Go panic->SIGABRT)
+     * Kotlin 层抓不到，此提示主要针对 Kotlin 层异常。
+     */
+    private fun maybeShowLastCrash() {
+        try {
+            val f = File(cacheDir, "crash.log")
+            if (f.exists() && f.length() > 0) {
+                Toast.makeText(this, "检测到上次崩溃日志(crash.log)，请反馈以便定位", Toast.LENGTH_LONG).show()
+            }
+        } catch (_: Throwable) {
+        }
     }
 
     private fun setupWebView() {
