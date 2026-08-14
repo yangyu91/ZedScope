@@ -443,7 +443,7 @@
             android:id="@+id/chipTasks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:chipSpacingHorizontal="@dimen/yami_space_sm" />
+            app:chipSpacingHorizontal="@dimen/yami_space_sm" />
     </HorizontalScrollView>
 
     <!-- 对话气泡列表 -->
