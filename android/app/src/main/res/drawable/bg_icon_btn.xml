@@ -1,8 +1,16 @@
+<!-- Icon button: glass disc (72%) with a hairline ring at rest; the accent
+     ripple blooms on press. Translucent so it melts into the chrome bar. -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="@color/yami_accent_soft">
+    android:color="@color/yami_accent_ripple">
     <item android:id="@android:id/mask">
         <shape android:shape="oval">
             <solid android:color="@color/white" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/yami_surface_glass" />
+            <stroke android:width="@dimen/yami_stroke" android:color="@color/yami_divider" />
         </shape>
     </item>
 </ripple>

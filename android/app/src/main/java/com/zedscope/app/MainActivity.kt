@@ -25,6 +25,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import com.google.android.material.button.MaterialButtonToggleGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -67,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchClean: MaterialSwitch
     private lateinit var switchVpn: MaterialSwitch
     private lateinit var tvVpnStatus: TextView
+    private lateinit var themeToggle: com.google.android.material.button.MaterialButtonToggleGroup
 
     private val captureAdapter = CaptureAdapter()
     private val tokenAdapter = TokenAdapter()
@@ -105,6 +108,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applySavedNightMode()           // restore day / night before the theme is applied
         setTheme(R.style.Theme_Yami)   // swap splash theme back to the app theme
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -138,6 +142,7 @@ class MainActivity : AppCompatActivity() {
         switchClean = findViewById(R.id.switchClean)
         switchVpn = findViewById(R.id.switchVpn)
         tvVpnStatus = findViewById(R.id.tvVpnStatus)
+        themeToggle = findViewById(R.id.themeToggle)
 
         // 多窗口：把布局里的 webview 作为第一个浏览器窗口；容器用于后续多开
         flBrowserContainer = findViewById(R.id.flWebContainer)
@@ -158,6 +163,7 @@ class MainActivity : AppCompatActivity() {
         setupWebView()
         setupPanels()
         setupSettings()
+        setupThemeToggle()
 
         val startRes = YamiCore.start()
         boot("YamiCore.start=$startRes")
@@ -828,20 +834,50 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadHome() {
-        webView.loadUrl("file:///android_asset/home.html")
+        // 起始页（home.html / WebView UI）已移除，加载空白页避免引用已删除资产。
+        webView.loadUrl("about:blank")
         etUrl.setText("")
     }
 
 
     private fun showPanel(which: Int) {
         if (which == currentPanel) return
+        val outgoing = currentPanel
         currentPanel = which
         val panels = arrayOf(flBrowser, flSettings, flAi, flSsh, flProxy, flCapture, flToken)
+        val fromSub = outgoing in 2..6
+        val toSub = which in 2..6
         for (i in panels.indices) {
             val v = panels[i]
-            v.visibility = if (i == which) View.VISIBLE else View.GONE
-            if (i == which && v.visibility == View.VISIBLE) {
-                v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.panel_fade_in))
+            when {
+                i == which -> {
+                    if (v.visibility != View.VISIBLE) {
+                        v.visibility = View.VISIBLE
+                        // directional enter: drill in from the right, return from the left
+                        val anim = when {
+                            toSub && !fromSub -> R.anim.slide_fade_right_in
+                            !toSub && fromSub -> R.anim.slide_fade_left_in
+                            else -> R.anim.slide_fade_in
+                        }
+                        v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, anim))
+                    }
+                }
+                i == outgoing -> {
+                    if (v.visibility == View.VISIBLE) {
+                        // directional exit, mirrored to the enter so it reads like a carousel
+                        val out = when {
+                            toSub && !fromSub -> R.anim.slide_fade_left_out
+                            !toSub && fromSub -> R.anim.slide_fade_right_out
+                            else -> R.anim.slide_fade_out
+                        }
+                        v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, out))
+                        // hide after the exit settles (guard: never hide the panel we just re-entered)
+                        v.postDelayed({
+                            if (v.visibility == View.VISIBLE && v !== panels[currentPanel]) v.visibility = View.GONE
+                        }, 220)
+                    }
+                }
+                else -> v.visibility = View.GONE
             }
         }
         // 子页（从设置中心进入）时底部导航高亮"设置"：直接改选中态，
@@ -851,6 +887,37 @@ class MainActivity : AppCompatActivity() {
         }
         if (which == 5) loadWithSkeleton(skeletonCapture, ::refreshCapture)
         if (which == 6) loadWithSkeleton(skeletonToken, ::refreshToken)
+    }
+
+    // ===================== 主题（日间 / 夜间） =====================
+    /** Apply the persisted night mode before the theme is inflated (no flash). */
+    private fun applySavedNightMode() {
+        val prefs = getSharedPreferences("zedscope", MODE_PRIVATE)
+        val mode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        AppCompatDelegate.setDefaultNightMode(mode)
+    }
+
+    /** Wire the 自动 / 浅色 / 深色 segmented control and persist the choice. */
+    private fun setupThemeToggle() {
+        val prefs = getSharedPreferences("zedscope", MODE_PRIVATE)
+        val mode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        themeToggle.check(
+            when (mode) {
+                AppCompatDelegate.MODE_NIGHT_NO -> R.id.themeLight
+                AppCompatDelegate.MODE_NIGHT_YES -> R.id.themeDark
+                else -> R.id.themeAuto
+            }
+        )
+        themeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newMode = when (checkedId) {
+                R.id.themeLight -> AppCompatDelegate.MODE_NIGHT_NO
+                R.id.themeDark -> AppCompatDelegate.MODE_NIGHT_YES
+                else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            }
+            prefs.edit().putInt("theme_mode", newMode).apply()
+            AppCompatDelegate.setDefaultNightMode(newMode)
+        }
     }
 
     /**
@@ -1077,7 +1144,8 @@ class MainActivity : AppCompatActivity() {
             else if (scrollY < oldScrollY - 12 && uiHidden) showChrome()
         }
         switchBrowserWindow(browserWebViews.size - 1)
-        wv.loadUrl("file:///android_asset/home.html")
+        // 起始页（home.html / WebView UI）已移除，加载空白页避免引用已删除资产。
+        wv.loadUrl("about:blank")
         Toast.makeText(this, getString(R.string.win_browser, browserWebViews.size), Toast.LENGTH_SHORT).show()
     }
 

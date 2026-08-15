@@ -7,7 +7,8 @@
   flBrowser btnBack btnForward etUrl btnGo webview progress btnWindows topBar
   flSettings switchClean switchVpn tvVpnStatus btnInstallCa btnClear tvAbout
   rowAi rowSsh rowProxy rowCapture rowToken
-  flAi flSsh flProxy flCapture flToken bottomNav
+  flAi flSsh flProxy flCapture flToken bottomNav panelHost themeToggle
+  themeAuto themeLight themeDark
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -15,489 +16,512 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="?attr/colorSurface">
+    android:background="@color/yami_bg">
 
-    <!-- ============ Browser ============ -->
+    <!-- ============ Panel host: 7 overlapping panels (crossfade, no reflow) ============ -->
     <FrameLayout
-        android:id="@+id/flBrowser"
+        android:id="@+id/panelHost"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <LinearLayout
+        <!-- ============ Browser ============ -->
+        <FrameLayout
+            android:id="@+id/flBrowser"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="match_parent">
 
-            <!-- top bar: flat surface + hairline, pill address field -->
             <LinearLayout
-                android:id="@+id/topBar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="@dimen/yami_space_sm"
-                android:paddingEnd="@dimen/yami_space_sm"
-                android:paddingTop="@dimen/yami_space_sm"
-                android:paddingBottom="@dimen/yami_space_sm"
-                android:background="@drawable/bg_topbar_soft">
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
-                <ImageButton
-                    android:id="@+id/btnWindows"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_windows"
-                    android:contentDescription="@string/cd_windows"
-                    app:tint="?attr/colorOnSurface" />
-
-                <ImageButton
-                    android:id="@+id/btnBack"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_back"
-                    android:contentDescription="@string/cd_back"
-                    app:tint="?attr/colorOnSurface" />
-
-                <ImageButton
-                    android:id="@+id/btnForward"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_forward"
-                    android:contentDescription="@string/cd_forward"
-                    app:tint="?attr/colorOnSurface" />
-
-                <EditText
-                    android:id="@+id/etUrl"
-                    android:layout_width="0dp"
+                <!-- top bar: glass + hairline, pill address field -->
+                <LinearLayout
+                    android:id="@+id/topBar"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/yami_space_sm"
-                    android:layout_marginEnd="@dimen/yami_space_sm"
-                    android:drawableStart="@drawable/ic_shield"
-                    android:drawablePadding="@dimen/yami_space_sm"
-                    android:hint="@string/hint_url"
-                    android:imeOptions="actionGo"
-                    android:inputType="textUri"
-                    android:singleLine="true"
-                    android:textAlignment="viewStart"
-                    style="@style/Yami.EditText.Pill"
-                    app:drawableTint="@color/yami_accent" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="@dimen/yami_space_sm"
+                    android:paddingEnd="@dimen/yami_space_sm"
+                    android:paddingTop="@dimen/yami_space_sm"
+                    android:paddingBottom="@dimen/yami_space_sm"
+                    android:background="@drawable/bg_topbar_soft">
 
-                <ImageButton
-                    android:id="@+id/btnGo"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_refresh"
-                    android:contentDescription="@string/cd_refresh"
-                    app:tint="@color/yami_accent" />
+                    <ImageButton
+                        android:id="@+id/btnWindows"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_windows"
+                        android:contentDescription="@string/cd_windows"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <ImageButton
+                        android:id="@+id/btnBack"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_back"
+                        android:contentDescription="@string/cd_back"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <ImageButton
+                        android:id="@+id/btnForward"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_forward"
+                        android:contentDescription="@string/cd_forward"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <EditText
+                        android:id="@+id/etUrl"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/yami_space_sm"
+                        android:layout_marginEnd="@dimen/yami_space_sm"
+                        android:drawableStart="@drawable/ic_shield"
+                        android:drawablePadding="@dimen/yami_space_sm"
+                        android:hint="@string/hint_url"
+                        android:imeOptions="actionGo"
+                        android:inputType="textUri"
+                        android:singleLine="true"
+                        android:textAlignment="viewStart"
+                        style="@style/Yami.EditText.Pill"
+                        app:drawableTint="@color/yami_accent" />
+
+                    <ImageButton
+                        android:id="@+id/btnGo"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_refresh"
+                        android:contentDescription="@string/cd_refresh"
+                        app:tint="@color/yami_accent" />
+                </LinearLayout>
+
+                <!-- webview + progress -->
+                <FrameLayout
+                    android:id="@+id/flWebContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <WebView
+                        android:id="@+id/webview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <ProgressBar
+                        android:id="@+id/progress"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="3dp"
+                        android:layout_gravity="top"
+                        android:progressTint="@color/yami_accent"
+                        android:progressBackgroundTint="@android:color/transparent"
+                        android:visibility="gone" />
+
+                </FrameLayout>
             </LinearLayout>
+        </FrameLayout>
 
-            <!-- webview + progress -->
-            <FrameLayout
-                android:id="@+id/flWebContainer"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
-
-                <WebView
-                    android:id="@+id/webview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <ProgressBar
-                    android:id="@+id/progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="3dp"
-                    android:layout_gravity="top"
-                    android:progressTint="@color/yami_accent"
-                    android:progressBackgroundTint="@android:color/transparent"
-                    android:visibility="gone" />
-
-            </FrameLayout>
-        </LinearLayout>
-    </FrameLayout>
-
-    <!-- ============ Settings hub ============ -->
-    <FrameLayout
-        android:id="@+id/flSettings"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
-
-        <ScrollView
+        <!-- ============ Settings hub ============ -->
+        <FrameLayout
+            android:id="@+id/flSettings"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="?attr/colorSurface"
-            android:paddingStart="@dimen/yami_space_lg"
-            android:paddingEnd="@dimen/yami_space_lg"
-            android:paddingTop="@dimen/yami_space_xl"
-            android:paddingBottom="@dimen/yami_space_xl"
-            android:clipToPadding="false"
-            android:scrollbars="none">
+            android:visibility="gone">
 
-            <LinearLayout
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:animateLayoutChanges="true">
+                android:layout_height="match_parent"
+                android:background="@color/yami_bg"
+                android:paddingStart="@dimen/yami_space_lg"
+                android:paddingEnd="@dimen/yami_space_lg"
+                android:paddingTop="@dimen/yami_space_xl"
+                android:paddingBottom="@dimen/yami_space_xl"
+                android:clipToPadding="false"
+                android:scrollbars="none">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_settings"
-                    style="@style/Yami.Text.Title"
-                    android:textSize="@dimen/yami_title_size"
-                    android:paddingStart="@dimen/yami_space_xs"
-                    android:paddingBottom="@dimen/yami_space_lg" />
-
-                <!-- ===== 功能入口 ===== -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_group_modules"
-                    android:paddingStart="@dimen/yami_space_md"
-                    android:paddingBottom="@dimen/yami_space_sm"
-                    style="@style/Yami.Text.Label" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Yami.Card"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/yami_space_lg">
+                    android:orientation="vertical"
+                    android:animateLayoutChanges="true">
 
-                    <LinearLayout
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_settings"
+                        style="@style/Yami.Text.Title"
+                        android:textSize="@dimen/yami_title_size"
+                        android:paddingStart="@dimen/yami_space_xs"
+                        android:paddingBottom="@dimen/yami_space_lg" />
+
+                    <!-- ===== 外观（日间 / 夜间） ===== -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_appearance"
+                        android:paddingStart="@dimen/yami_space_md"
+                        android:paddingBottom="@dimen/yami_space_sm"
+                        style="@style/Yami.Text.Label" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_marginBottom="@dimen/yami_space_lg">
 
-                        <!-- AI 对话 -->
                         <LinearLayout
-                            android:id="@+id/rowAi"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="?attr/selectableItemBackground"
-                            android:paddingStart="@dimen/yami_space_sm"
-                            android:paddingEnd="@dimen/yami_space_sm"
+                            android:orientation="vertical"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
                             android:paddingTop="@dimen/yami_space_md"
                             android:paddingBottom="@dimen/yami_space_md">
-
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_ai"
-                                app:tint="@color/yami_accent" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="@dimen/yami_space_lg"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/nav_ai"
-                                    style="@style/Yami.Text.Body" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/row_ai_desc"
-                                    android:textSize="12sp"
-                                    style="@style/Yami.Text.Dim" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_forward"
-                                app:tint="@color/yami_on_surface_faint" />
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginStart="@dimen/yami_space_lg"
-                            android:background="@color/yami_divider_soft" />
-
-                        <!-- SSH -->
-                        <LinearLayout
-                            android:id="@+id/rowSsh"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="?attr/selectableItemBackground"
-                            android:paddingStart="@dimen/yami_space_sm"
-                            android:paddingEnd="@dimen/yami_space_sm"
-                            android:paddingTop="@dimen/yami_space_md"
-                            android:paddingBottom="@dimen/yami_space_md">
-
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_terminal"
-                                app:tint="@color/yami_accent" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="@dimen/yami_space_lg"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/ssh_title"
-                                    style="@style/Yami.Text.Body" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/row_ssh_desc"
-                                    android:textSize="12sp"
-                                    style="@style/Yami.Text.Dim" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_forward"
-                                app:tint="@color/yami_on_surface_faint" />
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginStart="@dimen/yami_space_lg"
-                            android:background="@color/yami_divider_soft" />
-
-                        <!-- 代理 -->
-                        <LinearLayout
-                            android:id="@+id/rowProxy"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="?attr/selectableItemBackground"
-                            android:paddingStart="@dimen/yami_space_sm"
-                            android:paddingEnd="@dimen/yami_space_sm"
-                            android:paddingTop="@dimen/yami_space_md"
-                            android:paddingBottom="@dimen/yami_space_md">
-
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_proxy"
-                                app:tint="@color/yami_accent" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="@dimen/yami_space_lg"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/section_proxy"
-                                    style="@style/Yami.Text.Body" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/row_proxy_desc"
-                                    android:textSize="12sp"
-                                    style="@style/Yami.Text.Dim" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_forward"
-                                app:tint="@color/yami_on_surface_faint" />
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginStart="@dimen/yami_space_lg"
-                            android:background="@color/yami_divider_soft" />
-
-                        <!-- 抓包 -->
-                        <LinearLayout
-                            android:id="@+id/rowCapture"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="?attr/selectableItemBackground"
-                            android:paddingStart="@dimen/yami_space_sm"
-                            android:paddingEnd="@dimen/yami_space_sm"
-                            android:paddingTop="@dimen/yami_space_md"
-                            android:paddingBottom="@dimen/yami_space_md">
-
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_capture"
-                                app:tint="@color/yami_accent" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="@dimen/yami_space_lg"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/section_capture"
-                                    style="@style/Yami.Text.Body" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/row_capture_desc"
-                                    android:textSize="12sp"
-                                    style="@style/Yami.Text.Dim" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_forward"
-                                app:tint="@color/yami_on_surface_faint" />
-                        </LinearLayout>
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginStart="@dimen/yami_space_lg"
-                            android:background="@color/yami_divider_soft" />
-
-                        <!-- Token -->
-                        <LinearLayout
-                            android:id="@+id/rowToken"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="?attr/selectableItemBackground"
-                            android:paddingStart="@dimen/yami_space_sm"
-                            android:paddingEnd="@dimen/yami_space_sm"
-                            android:paddingTop="@dimen/yami_space_md"
-                            android:paddingBottom="@dimen/yami_space_md">
-
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_token"
-                                app:tint="@color/yami_accent" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="@dimen/yami_space_lg"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/section_token"
-                                    style="@style/Yami.Text.Body" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/row_token_desc"
-                                    android:textSize="12sp"
-                                    style="@style/Yami.Text.Dim" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_forward"
-                                app:tint="@color/yami_on_surface_faint" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- ===== 通用：纯净抓包 ===== -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_group_general"
-                    android:paddingStart="@dimen/yami_space_md"
-                    android:paddingBottom="@dimen/yami_space_sm"
-                    style="@style/Yami.Text.Label" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Yami.Card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/yami_space_lg">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="@dimen/yami_space_md"
-                            android:orientation="vertical">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/settings_capture_clean"
+                                android:text="@string/settings_theme"
                                 style="@style/Yami.Text.Body" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <com.google.android.material.button.MaterialButtonToggleGroup
+                                android:id="@+id/themeToggle"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/yami_space_xs"
-                                android:text="@string/settings_capture_clean_desc"
-                                style="@style/Yami.Text.Dim" />
+                                android:layout_marginTop="@dimen/yami_space_sm"
+                                app:singleSelection="true"
+                                app:selectionRequired="true">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/themeAuto"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/theme_auto" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/themeLight"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/theme_light" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/themeDark"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/theme_dark" />
+                            </com.google.android.material.button.MaterialButtonToggleGroup>
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchClean"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    <!-- ===== 功能入口 ===== -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_group_modules"
+                        android:paddingStart="@dimen/yami_space_md"
+                        android:paddingBottom="@dimen/yami_space_sm"
+                        style="@style/Yami.Text.Label" />
 
-                <!-- ===== 通用：全局抓包 ===== -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Yami.Card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/yami_space_lg">
-
-                    <LinearLayout
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_marginBottom="@dimen/yami_space_lg">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <!-- AI 对话 -->
+                            <LinearLayout
+                                android:id="@+id/rowAi"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:paddingStart="@dimen/yami_space_sm"
+                                android:paddingEnd="@dimen/yami_space_sm"
+                                android:paddingTop="@dimen/yami_space_md"
+                                android:paddingBottom="@dimen/yami_space_md">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_ai"
+                                    app:tint="@color/yami_accent" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="@dimen/yami_space_lg"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/nav_ai"
+                                        style="@style/Yami.Text.Body" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/row_ai_desc"
+                                        android:textSize="12sp"
+                                        style="@style/Yami.Text.Dim" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/ic_forward"
+                                    app:tint="@color/yami_on_surface_faint" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginStart="@dimen/yami_space_lg"
+                                android:background="@color/yami_divider_soft" />
+
+                            <!-- SSH -->
+                            <LinearLayout
+                                android:id="@+id/rowSsh"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:paddingStart="@dimen/yami_space_sm"
+                                android:paddingEnd="@dimen/yami_space_sm"
+                                android:paddingTop="@dimen/yami_space_md"
+                                android:paddingBottom="@dimen/yami_space_md">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_terminal"
+                                    app:tint="@color/yami_accent" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="@dimen/yami_space_lg"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/ssh_title"
+                                        style="@style/Yami.Text.Body" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/row_ssh_desc"
+                                        android:textSize="12sp"
+                                        style="@style/Yami.Text.Dim" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/ic_forward"
+                                    app:tint="@color/yami_on_surface_faint" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginStart="@dimen/yami_space_lg"
+                                android:background="@color/yami_divider_soft" />
+
+                            <!-- 代理 -->
+                            <LinearLayout
+                                android:id="@+id/rowProxy"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:paddingStart="@dimen/yami_space_sm"
+                                android:paddingEnd="@dimen/yami_space_sm"
+                                android:paddingTop="@dimen/yami_space_md"
+                                android:paddingBottom="@dimen/yami_space_md">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_proxy"
+                                    app:tint="@color/yami_accent" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="@dimen/yami_space_lg"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/section_proxy"
+                                        style="@style/Yami.Text.Body" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/row_proxy_desc"
+                                        android:textSize="12sp"
+                                        style="@style/Yami.Text.Dim" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/ic_forward"
+                                    app:tint="@color/yami_on_surface_faint" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginStart="@dimen/yami_space_lg"
+                                android:background="@color/yami_divider_soft" />
+
+                            <!-- 抓包 -->
+                            <LinearLayout
+                                android:id="@+id/rowCapture"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:paddingStart="@dimen/yami_space_sm"
+                                android:paddingEnd="@dimen/yami_space_sm"
+                                android:paddingTop="@dimen/yami_space_md"
+                                android:paddingBottom="@dimen/yami_space_md">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_capture"
+                                    app:tint="@color/yami_accent" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="@dimen/yami_space_lg"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/section_capture"
+                                        style="@style/Yami.Text.Body" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/row_capture_desc"
+                                        android:textSize="12sp"
+                                        style="@style/Yami.Text.Dim" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/ic_forward"
+                                    app:tint="@color/yami_on_surface_faint" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginStart="@dimen/yami_space_lg"
+                                android:background="@color/yami_divider_soft" />
+
+                            <!-- Token -->
+                            <LinearLayout
+                                android:id="@+id/rowToken"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:paddingStart="@dimen/yami_space_sm"
+                                android:paddingEnd="@dimen/yami_space_sm"
+                                android:paddingTop="@dimen/yami_space_md"
+                                android:paddingBottom="@dimen/yami_space_md">
+
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/ic_token"
+                                    app:tint="@color/yami_accent" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="@dimen/yami_space_lg"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/section_token"
+                                        style="@style/Yami.Text.Body" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/row_token_desc"
+                                        android:textSize="12sp"
+                                        style="@style/Yami.Text.Dim" />
+                                </LinearLayout>
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/ic_forward"
+                                    app:tint="@color/yami_on_surface_faint" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- ===== 通用：纯净抓包 ===== -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_group_general"
+                        android:paddingStart="@dimen/yami_space_md"
+                        android:paddingBottom="@dimen/yami_space_sm"
+                        style="@style/Yami.Text.Label" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/yami_space_lg">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -505,307 +529,447 @@
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
 
-                            <TextView
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:layout_marginEnd="@dimen/yami_space_md"
-                                android:text="@string/settings_vpn"
-                                style="@style/Yami.Text.Body" />
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/settings_capture_clean"
+                                    style="@style/Yami.Text.Body" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/yami_space_xs"
+                                    android:text="@string/settings_capture_clean_desc"
+                                    style="@style/Yami.Text.Dim" />
+                            </LinearLayout>
 
                             <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/switchVpn"
+                                android:id="@+id/switchClean"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:checked="true" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/yami_space_xs"
-                            android:layout_marginBottom="@dimen/yami_space_md"
-                            android:text="@string/settings_vpn_desc"
-                            style="@style/Yami.Text.Dim" />
-
-                        <TextView
-                            android:id="@+id/tvVpnStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_pill_surface"
-                            android:paddingStart="@dimen/yami_space_md"
-                            android:paddingEnd="@dimen/yami_space_md"
-                            android:paddingTop="5dp"
-                            android:paddingBottom="5dp"
-                            android:text="@string/vpn_status_off"
-                            style="@style/Yami.Text.Dim" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- ===== 安全与证书 ===== -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_security"
-                    android:paddingStart="@dimen/yami_space_md"
-                    android:paddingBottom="@dimen/yami_space_sm"
-                    style="@style/Yami.Text.Label" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Yami.Card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/yami_space_lg">
-
-                    <LinearLayout
+                    <!-- ===== 通用：全局抓包 ===== -->
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_marginBottom="@dimen/yami_space_lg">
 
-                        <TextView
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginBottom="@dimen/yami_space_md"
-                            android:text="@string/home_ca_hint"
-                            style="@style/Yami.Text.Dim" />
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/tvCaStatus"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_pill_surface"
-                            android:paddingStart="@dimen/yami_space_md"
-                            android:paddingEnd="@dimen/yami_space_md"
-                            android:paddingTop="5dp"
-                            android:paddingBottom="5dp"
-                            android:layout_marginBottom="@dimen/yami_space_md"
-                            android:text="@string/ca_status_missing"
-                            style="@style/Yami.Text.Body" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnInstallCa"
-                            style="@style/Yami.Button.Tonal"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:icon="@drawable/ic_shield"
-                            app:iconGravity="textStart"
-                            android:text="@string/btn_install_ca" />
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginEnd="@dimen/yami_space_md"
+                                    android:text="@string/settings_vpn"
+                                    style="@style/Yami.Text.Body" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnClear"
-                            style="@style/Yami.Button.Outline"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/yami_space_md"
-                            app:icon="@drawable/ic_delete"
-                            app:iconGravity="textStart"
-                            android:text="@string/btn_clear" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                                <com.google.android.material.materialswitch.MaterialSwitch
+                                    android:id="@+id/switchVpn"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                            </LinearLayout>
 
-                <!-- ===== 关于 ===== -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_about"
-                    android:paddingStart="@dimen/yami_space_md"
-                    android:paddingBottom="@dimen/yami_space_sm"
-                    style="@style/Yami.Text.Label" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/yami_space_xs"
+                                android:layout_marginBottom="@dimen/yami_space_md"
+                                android:text="@string/settings_vpn_desc"
+                                style="@style/Yami.Text.Dim" />
 
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/Yami.Card"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                            <TextView
+                                android:id="@+id/tvVpnStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_pill_surface"
+                                android:paddingStart="@dimen/yami_space_md"
+                                android:paddingEnd="@dimen/yami_space_md"
+                                android:paddingTop="5dp"
+                                android:paddingBottom="5dp"
+                                android:text="@string/vpn_status_off"
+                                style="@style/Yami.Text.Dim" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
+                    <!-- ===== 安全与证书 ===== -->
                     <TextView
-                        android:id="@+id/tvAbout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_security"
+                        android:paddingStart="@dimen/yami_space_md"
+                        android:paddingBottom="@dimen/yami_space_sm"
+                        style="@style/Yami.Text.Label" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:lineSpacingExtra="3dp"
-                        android:text="@string/about"
-                        style="@style/Yami.Text.Dim" />
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-        </ScrollView>
-    </FrameLayout>
+                        android:layout_marginBottom="@dimen/yami_space_lg">
 
-    <!-- ============ AI 独立窗口 ============ -->
-    <FrameLayout
-        android:id="@+id/flAi"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
 
-        <include layout="@layout/page_ai" />
-    </FrameLayout>
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="@dimen/yami_space_md"
+                                android:text="@string/home_ca_hint"
+                                style="@style/Yami.Text.Dim" />
 
-    <!-- ============ SSH 独立窗口 ============ -->
-    <FrameLayout
-        android:id="@+id/flSsh"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
+                            <TextView
+                                android:id="@+id/tvCaStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_pill_surface"
+                                android:paddingStart="@dimen/yami_space_md"
+                                android:paddingEnd="@dimen/yami_space_md"
+                                android:paddingTop="5dp"
+                                android:paddingBottom="5dp"
+                                android:layout_marginBottom="@dimen/yami_space_md"
+                                android:text="@string/ca_status_missing"
+                                style="@style/Yami.Text.Body" />
 
-        <include layout="@layout/page_ssh" />
-    </FrameLayout>
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnInstallCa"
+                                style="@style/Yami.Button.Tonal"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:icon="@drawable/ic_shield"
+                                app:iconGravity="textStart"
+                                android:text="@string/btn_install_ca" />
 
-    <!-- ============ 代理独立窗口 ============ -->
-    <FrameLayout
-        android:id="@+id/flProxy"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnClear"
+                                style="@style/Yami.Button.Outline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/yami_space_md"
+                                app:icon="@drawable/ic_delete"
+                                app:iconGravity="textStart"
+                                android:text="@string/btn_clear" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-        <include layout="@layout/page_proxy" />
-    </FrameLayout>
+                    <!-- ===== 关于 ===== -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_about"
+                        android:paddingStart="@dimen/yami_space_md"
+                        android:paddingBottom="@dimen/yami_space_sm"
+                        style="@style/Yami.Text.Label" />
 
-    <!-- ============ Capture / network log ============ -->
-    <FrameLayout
-        android:id="@+id/flCapture"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Yami.Card"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-        <LinearLayout
+                        <TextView
+                            android:id="@+id/tvAbout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lineSpacingExtra="3dp"
+                            android:text="@string/about"
+                            style="@style/Yami.Text.Dim" />
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </ScrollView>
+        </FrameLayout>
+
+        <!-- ============ AI 独立窗口 ============ -->
+        <FrameLayout
+            android:id="@+id/flAi"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="?attr/colorSurface">
+            android:visibility="gone">
 
-            <!-- header: back + title + live counters -->
+            <include layout="@layout/page_ai" />
+        </FrameLayout>
+
+        <!-- ============ SSH 独立窗口 ============ -->
+        <FrameLayout
+            android:id="@+id/flSsh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <include layout="@layout/page_ssh" />
+        </FrameLayout>
+
+        <!-- ============ 代理独立窗口 ============ -->
+        <FrameLayout
+            android:id="@+id/flProxy"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <include layout="@layout/page_proxy" />
+        </FrameLayout>
+
+        <!-- ============ Capture / network log ============ -->
+        <FrameLayout
+            android:id="@+id/flCapture"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="@dimen/yami_space_sm"
-                android:paddingEnd="@dimen/yami_space_sm"
-                android:paddingTop="@dimen/yami_space_sm"
-                android:paddingBottom="@dimen/yami_space_sm"
-                android:background="@drawable/bg_topbar_soft">
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:background="@color/yami_bg">
 
-                <ImageButton
-                    android:id="@+id/btnCaptureBack"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_back"
-                    android:contentDescription="@string/cd_back"
-                    app:tint="?attr/colorOnSurface" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/yami_space_sm"
-                    android:text="@string/section_capture"
-                    style="@style/Yami.Text.Title"
-                    android:textSize="@dimen/yami_title_size" />
-
+                <!-- header: back + title + live counters -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:paddingStart="@dimen/yami_space_sm"
+                    android:paddingEnd="@dimen/yami_space_sm"
+                    android:paddingTop="@dimen/yami_space_sm"
+                    android:paddingBottom="@dimen/yami_space_sm"
+                    android:background="@drawable/bg_topbar_soft">
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
+                    <ImageButton
+                        android:id="@+id/btnCaptureBack"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_back"
+                        android:contentDescription="@string/cd_back"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:background="@drawable/bg_pill_surface"
-                        android:paddingStart="@dimen/yami_space_md"
-                        android:paddingEnd="@dimen/yami_space_md"
-                        android:paddingTop="5dp"
-                        android:paddingBottom="5dp">
-
-                        <TextView
-                            android:id="@+id/statRequests"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            style="@style/Yami.Text.Stat" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:text="@string/stat_requests"
-                            style="@style/Yami.Text.Dim" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
+                        android:layout_weight="1"
                         android:layout_marginStart="@dimen/yami_space_sm"
-                        android:background="@drawable/bg_pill_surface"
-                        android:paddingStart="@dimen/yami_space_md"
-                        android:paddingEnd="@dimen/yami_space_md"
-                        android:paddingTop="5dp"
-                        android:paddingBottom="5dp">
-
-                        <TextView
-                            android:id="@+id/statTokens"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            style="@style/Yami.Text.Stat" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:text="@string/stat_tokens"
-                            style="@style/Yami.Text.Dim" />
-                    </LinearLayout>
+                        android:text="@string/section_capture"
+                        style="@style/Yami.Text.Title"
+                        android:textSize="@dimen/yami_title_size" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginStart="@dimen/yami_space_sm"
-                        android:background="@drawable/bg_pill_surface"
-                        android:paddingStart="@dimen/yami_space_md"
-                        android:paddingEnd="@dimen/yami_space_md"
-                        android:paddingTop="5dp"
-                        android:paddingBottom="5dp">
+                        android:gravity="center_vertical">
 
-                        <TextView
-                            android:id="@+id/statLogins"
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textColor="@color/yami_warn"
-                            style="@style/Yami.Text.Stat" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@drawable/bg_pill_surface"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp">
 
-                        <TextView
+                            <TextView
+                                android:id="@+id/statRequests"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                style="@style/Yami.Text.Stat" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="@string/stat_requests"
+                                style="@style/Yami.Text.Dim" />
+                        </LinearLayout>
+
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:text="@string/stat_logins"
-                            style="@style/Yami.Text.Dim" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginStart="@dimen/yami_space_sm"
+                            android:background="@drawable/bg_pill_surface"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp">
+
+                            <TextView
+                                android:id="@+id/statTokens"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                style="@style/Yami.Text.Stat" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="@string/stat_tokens"
+                                style="@style/Yami.Text.Dim" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginStart="@dimen/yami_space_sm"
+                            android:background="@drawable/bg_pill_surface"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp">
+
+                            <TextView
+                                android:id="@+id/statLogins"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/yami_warn"
+                                style="@style/Yami.Text.Stat" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="@string/stat_logins"
+                                style="@style/Yami.Text.Dim" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                        android:id="@+id/swipeCapture"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvCapture"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:paddingStart="@dimen/yami_list_padding"
+                            android:paddingEnd="@dimen/yami_list_padding"
+                            android:paddingTop="@dimen/yami_space_xs"
+                            android:paddingBottom="88dp"
+                            android:clipToPadding="false"
+                            android:scrollbars="vertical" />
+                    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+                    <!-- skeleton shown while the log loads -->
+                    <FrameLayout
+                        android:id="@+id/skeletonCapture"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/yami_bg"
+                        android:visibility="gone">
+                        <include layout="@layout/skeleton_capture" />
+                    </FrameLayout>
+                </FrameLayout>
             </LinearLayout>
 
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
+            <TextView
+                android:id="@+id/emptyCapture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="@dimen/yami_space_xxl"
+                android:layout_marginEnd="@dimen/yami_space_xxl"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/empty_capture"
+                android:visibility="gone"
+                style="@style/Yami.Text.Dim" />
 
-                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                    android:id="@+id/swipeCapture"
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCopyAll"
+                style="@style/Yami.Fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="@dimen/yami_space_lg"
+                android:src="@drawable/ic_copy"
+                android:contentDescription="@string/copy_all" />
+        </FrameLayout>
+
+        <!-- ============ Token ============ -->
+        <FrameLayout
+            android:id="@+id/flToken"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:background="@color/yami_bg">
+
+                <!-- header: back + title -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="@dimen/yami_space_sm"
+                    android:paddingEnd="@dimen/yami_space_sm"
+                    android:paddingTop="@dimen/yami_space_sm"
+                    android:paddingBottom="@dimen/yami_space_sm"
+                    android:background="@drawable/bg_topbar_soft">
+
+                    <ImageButton
+                        android:id="@+id/btnTokenBack"
+                        android:layout_width="@dimen/yami_icon_btn"
+                        android:layout_height="@dimen/yami_icon_btn"
+                        android:background="@drawable/bg_icon_btn"
+                        android:src="@drawable/ic_back"
+                        android:contentDescription="@string/cd_back"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/yami_space_sm"
+                        android:text="@string/section_token"
+                        style="@style/Yami.Text.Title"
+                        android:textSize="@dimen/yami_title_size" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rvCapture"
+                        android:id="@+id/rvToken"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:paddingStart="@dimen/yami_list_padding"
@@ -814,139 +978,42 @@
                         android:paddingBottom="88dp"
                         android:clipToPadding="false"
                         android:scrollbars="vertical" />
-                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-                <!-- skeleton shown while the log loads -->
-                <FrameLayout
-                    android:id="@+id/skeletonCapture"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="?attr/colorSurface"
-                    android:visibility="gone">
-                    <include layout="@layout/skeleton_capture" />
+                    <!-- skeleton shown while the credentials load -->
+                    <FrameLayout
+                        android:id="@+id/skeletonToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/yami_bg"
+                        android:visibility="gone">
+                        <include layout="@layout/skeleton_token" />
+                    </FrameLayout>
                 </FrameLayout>
-            </FrameLayout>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/emptyCapture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginStart="@dimen/yami_space_xxl"
-            android:layout_marginEnd="@dimen/yami_space_xxl"
-            android:gravity="center"
-            android:lineSpacingExtra="4dp"
-            android:text="@string/empty_capture"
-            android:visibility="gone"
-            style="@style/Yami.Text.Dim" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnCopyAll"
-            style="@style/Yami.Fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/yami_space_lg"
-            android:src="@drawable/ic_copy"
-            android:contentDescription="@string/copy_all" />
-    </FrameLayout>
-
-    <!-- ============ Token ============ -->
-    <FrameLayout
-        android:id="@+id/flToken"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="?attr/colorSurface">
-
-            <!-- header: back + title -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="@dimen/yami_space_sm"
-                android:paddingEnd="@dimen/yami_space_sm"
-                android:paddingTop="@dimen/yami_space_sm"
-                android:paddingBottom="@dimen/yami_space_sm"
-                android:background="@drawable/bg_topbar_soft">
-
-                <ImageButton
-                    android:id="@+id/btnTokenBack"
-                    android:layout_width="@dimen/yami_icon_btn"
-                    android:layout_height="@dimen/yami_icon_btn"
-                    android:background="@drawable/bg_icon_btn"
-                    android:src="@drawable/ic_back"
-                    android:contentDescription="@string/cd_back"
-                    app:tint="?attr/colorOnSurface" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/yami_space_sm"
-                    android:text="@string/section_token"
-                    style="@style/Yami.Text.Title"
-                    android:textSize="@dimen/yami_title_size" />
             </LinearLayout>
 
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
+            <TextView
+                android:id="@+id/emptyToken"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="@dimen/yami_space_xxl"
+                android:layout_marginEnd="@dimen/yami_space_xxl"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/empty_token"
+                android:visibility="gone"
+                style="@style/Yami.Text.Dim" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvToken"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingStart="@dimen/yami_list_padding"
-                    android:paddingEnd="@dimen/yami_list_padding"
-                    android:paddingTop="@dimen/yami_space_xs"
-                    android:paddingBottom="88dp"
-                    android:clipToPadding="false"
-                    android:scrollbars="vertical" />
-
-                <!-- skeleton shown while the credentials load -->
-                <FrameLayout
-                    android:id="@+id/skeletonToken"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="?attr/colorSurface"
-                    android:visibility="gone">
-                    <include layout="@layout/skeleton_token" />
-                </FrameLayout>
-            </FrameLayout>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/emptyToken"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginStart="@dimen/yami_space_xxl"
-            android:layout_marginEnd="@dimen/yami_space_xxl"
-            android:gravity="center"
-            android:lineSpacingExtra="4dp"
-            android:text="@string/empty_token"
-            android:visibility="gone"
-            style="@style/Yami.Text.Dim" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnCopyTokens"
-            style="@style/Yami.Fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/yami_space_lg"
-            android:src="@drawable/ic_copy"
-            android:contentDescription="@string/copy_all" />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCopyTokens"
+                style="@style/Yami.Fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="@dimen/yami_space_lg"
+                android:src="@drawable/ic_copy"
+                android:contentDescription="@string/copy_all" />
+        </FrameLayout>
     </FrameLayout>
 
     <!-- ============ Bottom navigation ============ -->

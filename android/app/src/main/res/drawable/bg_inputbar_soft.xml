@@ -1,8 +1,9 @@
-<!-- Bottom input bar (AI panel): surface + top hairline, no shadow. -->
+<!-- Bottom input bar (AI / SSH): 72% glass + top hairline, no shadow.
+     Floats over the chat / terminal output. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/yami_surface" />
+            <solid android:color="@color/yami_surface_glass" />
         </shape>
     </item>
     <item android:gravity="top" android:height="1dp">

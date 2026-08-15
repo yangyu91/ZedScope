@@ -1,8 +1,10 @@
-<!-- Browser top bar: flat surface + a single hairline instead of an elevation shadow. -->
+<!-- Browser / page top bar: 72% glass over the content + a single hairline.
+     Floats (cyber-glass) over the WebView in the browser; over a solid panel
+     elsewhere it still reads as a frosted chrome strip. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/yami_surface" />
+            <solid android:color="@color/yami_surface_glass" />
         </shape>
     </item>
     <item android:gravity="bottom" android:height="1dp">

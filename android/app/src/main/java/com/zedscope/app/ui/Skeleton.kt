@@ -32,8 +32,8 @@ class SkeletonView @JvmOverloads constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
     private val radius = resources.getDimension(R.dimen.yami_radius_md)
-    private val base = ContextCompat.getColor(context, R.color.yami_surface_3)
-    private val hi = ContextCompat.getColor(context, R.color.yami_surface_4)
+    private val base = ContextCompat.getColor(context, R.color.yami_surface_2)
+    private val hi = ContextCompat.getColor(context, R.color.yami_on_accent_soft)
     private var sweep = 0f
     private var progress = 0f
 
@@ -53,17 +53,19 @@ class SkeletonView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         rect.set(0f, 0f, w.toFloat(), h.toFloat())
-        sweep = w * 0.55f
+        sweep = w * 0.7f
     }
 
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
+        val h = height.toFloat()
         paint.shader = null
         paint.color = base
         canvas.drawRoundRect(rect, radius, radius, paint)
+        // 105°-ish diagonal neon-cyan micro-shimmer (ret2shell feel)
         val start = -sweep + progress * (w + sweep)
         val grad = LinearGradient(
-            start, 0f, start + sweep, 0f,
+            start, h, start + sweep * 0.5f, 0f,
             intArrayOf(base, hi, base),
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP
@@ -100,7 +102,7 @@ class TypingDots @JvmOverloads constructor(
         val dp = resources.displayMetrics.density
         val size = (8 * dp).toInt()
         val gap = (6 * dp).toInt()
-        val color = ContextCompat.getColor(context, R.color.yami_on_surface_faint)
+        val color = ContextCompat.getColor(context, R.color.yami_accent)
         repeat(3) {
             val d = View(context).apply {
                 setBackgroundColor(color)

@@ -99,6 +99,13 @@
     <string name="toast_ca_install_failed">无法自动安装，证书已存到 %1$s，请到系统设置手动安装</string>
     <string name="settings_ca_path">证书文件路径</string>
 
+    <!-- v2.4 UI 重构：日间 / 夜间双主题 -->
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="theme_auto">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+
     <!-- v2.1: 省 token 模式（抄 Reasonix compact_ratio） -->
     <string name="ai_compact">省 token 模式</string>
     <string name="ai_compact_desc">用密钥 token 时自动开启：多轮对话压缩为「前缀+摘要+近期」，大幅省上下文</string>
@@ -115,13 +122,6 @@
     <string name="token_subtitle">从抓包里自动归集的凭证 · 点卡片复制</string>
     <string name="home_open_capture">网络日志</string>
     <string name="home_open_capture_desc">实时请求 / 响应 · Token 自动归集</string>
-
-    <!-- v2.2 UI 定制（planned feature，schema 见 assets/ui.schema.json） -->
-    <string name="section_ui_custom">界面定制</string>
-    <string name="nav_ui_custom">界面定制</string>
-    <string name="ui_custom_desc">在起始页点右上角「界面定制」可调强调色、圆角、间距密度与各 UI 区块的显示，配置按 ui.json 结构保存。</string>
-    <string name="ui_custom_path">assets/ui.json · assets/ui.schema.json</string>
-    <string name="ui_custom_saved">界面配置已保存</string>
 
     <!-- v2.3 对话式 AI 面板 -->
     <string name="ai_chat_empty">还没有对话\n点右上角齿轮配置 Provider（或用 DeepSeek 白嫖），再到下方输入任务</string>
