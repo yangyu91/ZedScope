@@ -71,7 +71,6 @@
     <string name="toast_ca_installing">正在打开证书安装器，请命名为 ZedScope 并设为「用于 VPN 和应用」</string>
     <string name="cert_path_hint">证书已保存到：%1$s\n可在「设置 → 安全 → 安装证书」手动选择</string>
     <string name="toast_ca_install_failed">无法自动安装，证书已存到 %1$s，请到系统设置手动安装</string>
-    <string name="capture_empty_banner">抓包为空？多半是证书没装 →</string>
     <string name="settings_ca_path">证书文件路径</string>
 
     <!-- v2.1: 省 token 模式（抄 Reasonix compact_ratio） -->

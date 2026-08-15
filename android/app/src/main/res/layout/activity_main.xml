@@ -6,7 +6,7 @@
   counters, so debugging never leaves the browsing flow.
 
   All view IDs are contract with MainActivity.kt — do not rename/remove:
-  flBrowser btnBack btnForward etUrl btnGo webview progress captureBanner
+  flBrowser btnBack btnForward etUrl btnGo webview progress
   flCapture statRequests statTokens statLogins swipeCapture rvCapture
   emptyCapture btnCopyAll flToken rvToken emptyToken btnCopyTokens
   flSettings switchClean switchVpn tvVpnStatus btnInstallCa btnClear tvAbout
@@ -110,27 +110,6 @@
                     android:progressBackgroundTint="@android:color/transparent"
                     android:visibility="gone" />
 
-                <!-- "capture is empty → your CA is probably missing" nudge -->
-                <TextView
-                    android:id="@+id/captureBanner"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom"
-                    android:layout_margin="@dimen/yami_space_md"
-                    android:background="@drawable/bg_banner_hint_ripple"
-                    android:paddingStart="@dimen/yami_space_lg"
-                    android:paddingEnd="@dimen/yami_space_lg"
-                    android:paddingTop="@dimen/yami_space_md"
-                    android:paddingBottom="@dimen/yami_space_md"
-                    android:gravity="center"
-                    android:text="@string/capture_empty_banner"
-                    android:textColor="@color/yami_warn"
-                    android:textSize="13sp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:visibility="gone"
-                    style="@style/Yami.Text.Dim"
-                    tools:visibility="visible" />
             </FrameLayout>
         </LinearLayout>
     </FrameLayout>

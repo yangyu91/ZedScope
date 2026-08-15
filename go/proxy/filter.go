@@ -22,10 +22,11 @@ func DefaultFilter() *Filter {
 		// yami-UA's own local control plane
 		`^127\.0\.0\.1$`, `^localhost$`, `^::1$`, `^0\.0\.0\.0$`, `\.local$`,
 		`(^|[-.])yami-ua(\.local)?$`,
-		// AI providers / relays / model backends
+		// AI providers / relays / model backends (note: deepseek.com is NOT
+		// filtered — users intentionally capture DeepSeek web sessions/tokens,
+		// and it is a primary feature; filtering it hid all its traffic)
 		`(^|[-.])openai\.com$`,
 		`(^|[-.])anthropic\.com$`, `(^|[-.])claude\.ai$`,
-		`(^|[-.])deepseek\.com$`,
 		`(^|[-.])googleapis\.com$`, `(^|[-.])generativelanguage\.googleapis\.com$`,
 		`(^|[-.])api\.mistral\.ai$`, `(^|[-.])cohere\.ai$`, `(^|[-.])ai21\.com$`,
 		`(^|[-.])openrouter\.ai$`, `(^|[-.])huggingface\.co$`,

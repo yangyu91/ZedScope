@@ -69,7 +69,6 @@ class MainActivity : AppCompatActivity() {
     private val tokenAdapter = TokenAdapter()
     private var currentPanel = 0
     private var currentSessionId = ""   // 当前 AI 会话（省token）
-    private lateinit var captureBanner: TextView   // 浏览器内"抓包为空"引导
 
     // 对话式 AI 面板
     private lateinit var chatAdapter: ChatAdapter
@@ -121,7 +120,6 @@ class MainActivity : AppCompatActivity() {
         switchClean = findViewById(R.id.switchClean)
         switchVpn = findViewById(R.id.switchVpn)
         tvVpnStatus = findViewById(R.id.tvVpnStatus)
-        captureBanner = findViewById(R.id.captureBanner)
 
         setupWebView()
         setupPanels()
@@ -213,7 +211,6 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 if (url != null && url.startsWith("http")) etUrl.setText(url)
-                updateBanner()
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -286,7 +283,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnClear).setOnClickListener {
             YamiCore.clear()
             refreshCapture()
-            updateBanner()
             Toast.makeText(this, "已清空", Toast.LENGTH_SHORT).show()
         }
         // 长按"清空"导出 HAR（抓包增强：ProxyPin 差距补全）
@@ -295,7 +291,6 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        captureBanner.setOnClickListener { installCa() }
 
         findViewById<View>(R.id.btnBack).setOnClickListener { if (webView.canGoBack()) webView.goBack() }
         findViewById<View>(R.id.btnForward).setOnClickListener { if (webView.canGoForward()) webView.goForward() }
@@ -586,11 +581,6 @@ class MainActivity : AppCompatActivity() {
         etUrl.setText("")
     }
 
-    // 浏览器内"抓包为空"引导：证书多半没装
-    private fun updateBanner() {
-        val empty = YamiCore.captures().isEmpty()
-        captureBanner.visibility = if (empty) View.VISIBLE else View.GONE
-    }
 
     private fun showPanel(which: Int) {
         if (which == currentPanel) return
@@ -603,7 +593,6 @@ class MainActivity : AppCompatActivity() {
                 v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.panel_fade_in))
             }
         }
-        if (which == 0) updateBanner()
         if (which == 1) loadWithSkeleton(skeletonCapture, ::refreshCapture)
         if (which == 2) loadWithSkeleton(skeletonToken, ::refreshToken)
     }

@@ -170,7 +170,12 @@ func (p *Proxy) handleConnect(w http.ResponseWriter, r *http.Request) {
 		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			return p.CA.LeafFor(hello.ServerName)
 		},
-		NextProtos: []string{"h2", "http/1.1"}, // advertise H2 to the client
+		// Only advertise HTTP/1.1 to the CLIENT. Chromium/WebView's HTTP/2
+		// support through a MITM CONNECT tunnel is notoriously flaky — with
+		// "h2" advertised, most HTTPS sites fail to load or hang while a few
+		// (e.g. passthrough-filtered hosts) happen to work. The upstream side
+		// still negotiates h2 independently (see newUpstreamClient).
+		NextProtos: []string{"http/1.1"},
 	}
 
 	ln := &singleConnListener{conn: clientConn}
@@ -241,6 +246,15 @@ func (p *Proxy) mitm(w http.ResponseWriter, req *http.Request, scheme string) {
 	// Relay to the client first — this fills respSink (and reqSink, already
 	// filled while the origin read the request).
 	writeResponse(w, resp)
+
+	// Capture is best-effort and MUST never affect the already-relayed
+	// response. Any panic here (store, regex, decrypt, sinks) is contained so
+	// the tunnel stays healthy for the next request.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[yami] capture panic (ignored): %v", r)
+		}
+	}()
 
 	// Now capture from the sinks.
 	reqBody := reqSink.Preview()

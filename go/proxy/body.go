@@ -26,13 +26,16 @@ func newBodySink(dir string) *bodySink {
 }
 
 // Write implements io.Writer. It is driven by io.TeeReader as the body is
-// relayed to the client/origin.
+// relayed to the client/origin. Capture must NEVER break the forwarding path:
+// any disk/spill failure is swallowed (data continues to flow, just not
+// recorded), so a broken capture store cannot take down browsing.
 func (s *bodySink) Write(p []byte) (int, error) {
 	s.total += int64(len(p))
 
 	// Already on disk: keep appending.
 	if s.f != nil {
-		return s.f.Write(p)
+		_, _ = s.f.Write(p)
+		return len(p), nil
 	}
 
 	// Would this push us past the in-memory budget? Spill to disk if the
@@ -45,12 +48,17 @@ func (s *bodySink) Write(p []byte) (int, error) {
 			return len(p), nil
 		}
 		if err := s.spill(); err != nil {
-			return 0, err
+			// Could not spill (dir unwritable etc.): stop recording, keep
+			// forwarding. Never fail the relay because of capture.
+			s.diskStopped = true
+			return len(p), nil
 		}
-		return s.f.Write(p)
+		_, _ = s.f.Write(p)
+		return len(p), nil
 	}
 
-	return s.buf.Write(p)
+	_, _ = s.buf.Write(p)
+	return len(p), nil
 }
 
 func (s *bodySink) spill() error {
