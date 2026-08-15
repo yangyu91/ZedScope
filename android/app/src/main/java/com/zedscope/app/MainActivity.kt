@@ -78,6 +78,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var typingDots: com.zedscope.app.ui.TypingDots
     private val chatHandler = Handler(Looper.getMainLooper())
 
+    // ---- 多窗口（浏览器多开 / AI / SSH）----
+    private val browserWebViews = mutableListOf<WebView>()   // 每个浏览器窗口一个 WebView
+    private var activeBrowserIndex = 0
+    private lateinit var flBrowserContainer: android.widget.FrameLayout  // WebView 容器
+    private lateinit var topBar: android.view.View                       // 顶栏（沉浸式）
+    private var uiHidden = false                                          // 沉浸式状态
+
     // v2 DEMO: VPN permission launcher for global (all-app) capture.
     private val vpnPermission = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -120,6 +127,13 @@ class MainActivity : AppCompatActivity() {
         switchClean = findViewById(R.id.switchClean)
         switchVpn = findViewById(R.id.switchVpn)
         tvVpnStatus = findViewById(R.id.tvVpnStatus)
+
+        // 多窗口：把布局里的 webview 作为第一个浏览器窗口；容器用于后续多开
+        flBrowserContainer = findViewById(R.id.flWebContainer)
+        browserWebViews.add(webView)
+        findViewById<android.view.View>(R.id.btnWindows).setOnClickListener { showWindowMenu() }
+        topBar = findViewById(R.id.topBar)
+        setupImmersive()
 
         setupWebView()
         setupPanels()
@@ -187,18 +201,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupWebView() {
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            loadWithOverviewMode = true
-            useWideViewPort = true
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            userAgentString = webView.settings.userAgentString.replace("; wv", "")
-            setSupportZoom(true)
-            builtInZoomControls = true
-            displayZoomControls = false
-        }
-        webView.webViewClient = object : WebViewClient() {
+        applyWebViewSettings(webView)
+        bindWebViewClients(webView)
+    }
+
+    /** 绑定 WebViewClient / WebChromeClient（etUrl 同步 + 进度条 + yami:// 路由）。 */
+    private fun bindWebViewClients(wv: WebView) {
+        wv.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 val u = url ?: return true
                 // App-internal actions from the home page.
@@ -213,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                 if (url != null && url.startsWith("http")) etUrl.setText(url)
             }
         }
-        webView.webChromeClient = object : WebChromeClient() {
+        wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 progress.visibility = if (newProgress >= 100) View.GONE else View.VISIBLE
                 progress.progress = newProgress
@@ -332,6 +341,130 @@ class MainActivity : AppCompatActivity() {
                 stopVpn()
             }
         }
+
+        setupProxyPanel()
+    }
+
+    // ===================== 代理池 / v2rayNG 对接 UI =====================
+    private val proxyPool = mutableListOf<Map<String, String>>()   // 节点池: {name, protocol, addr, link}
+    private val PREFS_PROXY = "zedscope_proxy"
+    private fun proxyPrefs() = getSharedPreferences(PREFS_PROXY, MODE_PRIVATE)
+
+    private fun setupProxyPanel() {
+        // 恢复上次保存的代理池
+        val saved = proxyPrefs().getString("pool", "[]")
+        try {
+            val type = object : com.google.gson.reflect.TypeToken<List<Map<String, String>>>() {}.type
+            val arr: List<Map<String, String>> = com.google.gson.Gson().fromJson(saved, type) ?: emptyList()
+            proxyPool.addAll(arr)
+        } catch (_: Throwable) {}
+
+        val etLink = findViewById<android.widget.EditText>(R.id.etProxyLink)
+        val tvStatus = findViewById<android.widget.TextView>(R.id.tvProxyStatus)
+        val tvPool = findViewById<android.widget.TextView>(R.id.tvProxyPool)
+
+        // 恢复当前上游显示
+        val cur = YamiCore.aiGetUpstream()
+        tvStatus.text = if (cur.isEmpty()) getString(R.string.proxy_status_direct)
+                        else getString(R.string.proxy_status_connected, cur)
+        renderProxyPool(tvPool)
+
+        findViewById<android.view.View>(R.id.btnProxyImport).setOnClickListener {
+            val link = etLink.text.toString().trim()
+            if (link.isEmpty()) { Toast.makeText(this, "请粘贴链接", Toast.LENGTH_SHORT).show(); return@setOnClickListener }
+            Thread {
+                val nodes = parseProxyLinks(link)
+                runOnUiThread {
+                    if (nodes.isEmpty()) {
+                        Toast.makeText(this, getString(R.string.proxy_import_fail, "无有效节点"), Toast.LENGTH_SHORT).show()
+                    } else {
+                        proxyPool.addAll(nodes)
+                        saveProxyPool()
+                        renderProxyPool(tvPool)
+                        Toast.makeText(this, getString(R.string.proxy_import_ok, nodes.size), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        }
+
+        // 连接 v2rayNG：探测其默认本地代理端口
+        findViewById<android.view.View>(R.id.btnConnectV2ray).setOnClickListener {
+            val candidates = listOf("127.0.0.1:10808", "127.0.0.1:10809", "127.0.0.1:1080")
+            var found = ""
+            for (c in candidates) { if (YamiCore.aiProbeUpstream(c)) { found = c; break } }
+            if (found.isEmpty()) {
+                Toast.makeText(this, R.string.proxy_v2ray_missing, Toast.LENGTH_LONG).show()
+            } else {
+                YamiCore.aiSetUpstream("socks5://$found")
+                tvStatus.text = getString(R.string.proxy_status_connected, "socks5://$found")
+                Toast.makeText(this, getString(R.string.proxy_v2ray_found, found), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 断开：恢复直连
+        findViewById<android.view.View>(R.id.btnDisconnectProxy).setOnClickListener {
+            YamiCore.aiSetUpstream("")
+            tvStatus.text = getString(R.string.proxy_status_direct)
+            Toast.makeText(this, "已恢复直连", Toast.LENGTH_SHORT).show()
+        }
+
+        // 点击池中节点：socks/http 直连设置上游，vmess 类提示走 v2rayNG
+        tvPool.setOnClickListener {
+            if (proxyPool.isEmpty()) return@setOnClickListener
+            val node = proxyPool[0]
+            val link = node["link"] ?: return@setOnClickListener
+            when (node["protocol"]) {
+                "socks", "socks5", "http" -> {
+                    YamiCore.aiSetUpstream(link)
+                    tvStatus.text = getString(R.string.proxy_status_connected, link)
+                    Toast.makeText(this, "已连接节点：${node["name"]}", Toast.LENGTH_SHORT).show()
+                }
+                else -> {
+                    copyText(link, "proxy-link")
+                    Toast.makeText(this, "vmess/vless/trojan/ss 需 v2rayNG 拨号：链接已复制，请在 v2rayNG 导入后点「连接 v2rayNG」", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    /** 解析分享链接/订阅：单个 vmess:// 等直接解析；http(s):// 当订阅拉取。返回节点列表。 */
+    private fun parseProxyLinks(link: String): List<Map<String, String>> {
+        val out = mutableListOf<Map<String, String>>()
+        if (link.startsWith("http://") || link.startsWith("https://")) {
+            // 订阅 URL：拉取内容，按行切分分享链接
+            return try {
+                val conn = java.net.URL(link).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000; conn.readTimeout = 8000
+                conn.instanceFollowRedirects = true
+                val body = conn.inputStream.bufferedReader().readText()
+                conn.disconnect()
+                body.lines().forEach { ln ->
+                    val l = ln.trim()
+                    if (l.isNotEmpty()) parseProxyLinks(l).forEach { out.add(it) }
+                }
+                out
+            } catch (e: Exception) { out }
+        }
+        // 单个链接
+        val parsed = YamiCore.aiProtoParse(link)
+        if (parsed.startsWith("err:")) return out
+        return try {
+            val type = object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
+            val m: Map<String, Any> = com.google.gson.Gson().fromJson(parsed, type) ?: return out
+            val protocol = (m["protocol"] as? String) ?: "unknown"
+            val addr = "${m["address"] ?: ""}:${m["port"] ?: ""}"
+            val name = (m["tag"] as? String)?.takeIf { it.isNotBlank() } ?: "${protocol}://$addr"
+            listOf(mapOf("name" to name, "protocol" to protocol, "addr" to addr, "link" to link))
+        } catch (_: Throwable) { out }
+    }
+
+    private fun saveProxyPool() {
+        try { proxyPrefs().edit().putString("pool", com.google.gson.Gson().toJson(proxyPool)).apply() } catch (_: Throwable) {}
+    }
+
+    private fun renderProxyPool(tv: TextView) {
+        if (proxyPool.isEmpty()) { tv.text = getString(R.string.proxy_pool_empty); return }
+        tv.text = proxyPool.take(8).joinToString("\n") { "· ${it["name"]}  [${it["protocol"]}]" }
     }
 
     private fun startVpn() {
@@ -727,6 +860,94 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent.createChooser(share, "导出 HAR"))
         } catch (e: Exception) {
             Toast.makeText(this, "HAR 导出失败：${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // ===================== 沉浸式全屏（滚动隐藏顶/底栏） =====================
+    private fun setupImmersive() {
+        webView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            if (currentPanel != 0) return@setOnScrollChangeListener  // 仅浏览器面板
+            if (scrollY > oldScrollY + 12 && !uiHidden) hideChrome()
+            else if (scrollY < oldScrollY - 12 && uiHidden) showChrome()
+        }
+    }
+
+    private fun hideChrome() {
+        uiHidden = true
+        topBar.animate().translationY(-topBar.height.toFloat()).setDuration(180).start()
+        bottomNav.animate().translationY(bottomNav.height.toFloat()).setDuration(180).start()
+    }
+
+    private fun showChrome() {
+        uiHidden = false
+        topBar.animate().translationY(0f).setDuration(180).start()
+        bottomNav.animate().translationY(0f).setDuration(180).start()
+    }
+
+    // ===================== 多窗口（浏览器多开 / AI / SSH） =====================
+    private fun showWindowMenu() {
+        val menu = androidx.appcompat.widget.PopupMenu(this, findViewById(R.id.btnWindows))
+        menu.menu.add(0, 9001, 0, getString(R.string.win_new_browser))
+        for (i in browserWebViews.indices) {
+            menu.menu.add(0, 1000 + i, i + 1, getString(R.string.win_browser, i + 1))
+        }
+        menu.menu.add(0, 2000, 99, getString(R.string.win_ai))
+        menu.menu.add(0, 2001, 100, getString(R.string.win_ssh))
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                9001 -> { newBrowserWindow(); true }
+                2000 -> { showPanel(4); true }
+                2001 -> { showPanel(4); true }  // SSH 在 AI 面板内
+                in 1000 until 2000 -> { switchBrowserWindow(item.itemId - 1000); true }
+                else -> false
+            }
+        }
+        menu.show()
+    }
+
+    /** 新建一个浏览器窗口（新 WebView），切到它。 */
+    private fun newBrowserWindow() {
+        val wv = WebView(this)
+        applyWebViewSettings(wv)
+        flBrowserContainer.addView(wv, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        browserWebViews.add(wv)
+        // 沉浸式监听
+        wv.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            if (currentPanel != 0) return@setOnScrollChangeListener
+            if (scrollY > oldScrollY + 12 && !uiHidden) hideChrome()
+            else if (scrollY < oldScrollY - 12 && uiHidden) showChrome()
+        }
+        switchBrowserWindow(browserWebViews.size - 1)
+        wv.loadUrl("file:///android_asset/home.html")
+        Toast.makeText(this, getString(R.string.win_browser, browserWebViews.size), Toast.LENGTH_SHORT).show()
+    }
+
+    private fun switchBrowserWindow(index: Int) {
+        if (index < 0 || index >= browserWebViews.size) return
+        activeBrowserIndex = index
+        for (i in browserWebViews.indices) {
+            browserWebViews[i].visibility = if (i == index) android.view.View.VISIBLE else android.view.View.GONE
+        }
+        webView = browserWebViews[index]
+        bindWebViewClients(webView)   // 重新绑定事件（etUrl/progress 跟随当前窗口）
+        etUrl.setText("")
+        boot("switchBrowser=$index")
+    }
+
+    /** 把 WebView 通用设置抽出来，供初始 + 新窗口共用。 */
+    private fun applyWebViewSettings(wv: WebView) {
+        wv.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            userAgentString = wv.settings.userAgentString.replace("; wv", "")
+            setSupportZoom(true)
+            builtInZoomControls = true
+            displayZoomControls = false
         }
     }
 

@@ -190,4 +190,15 @@ object YamiCore {
 
     /** Close an SSH session; returns true on success. */
     fun aiSshClose(id: String): Boolean = try { Yami.aiSshClose(id) == "1" } catch (e: Throwable) { false }
+
+    // ---------------- 代理池 / v2rayNG 对接 ----------------
+
+    /** 设置 WebView 抓包上游代理（http:// 或 socks5://），空串恢复直连。 */
+    fun aiSetUpstream(upstream: String): Boolean = try { Yami.aiSetUpstream(upstream) == "ok" } catch (e: Throwable) { false }
+
+    /** 读取当前上游代理（"" = 直连）。 */
+    fun aiGetUpstream(): String = try { Yami.aiGetUpstream() } catch (e: Throwable) { "" }
+
+    /** 探测 host:port 是否可达（用于检测 v2rayNG 本地代理端口）。 */
+    fun aiProbeUpstream(hostPort: String): Boolean = try { Yami.aiProbeUpstream(hostPort) == "1" } catch (e: Throwable) { false }
 }

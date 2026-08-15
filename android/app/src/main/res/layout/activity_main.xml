@@ -34,6 +34,7 @@
 
             <!-- top bar: flat surface + hairline, pill address field -->
             <LinearLayout
+                android:id="@+id/topBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -43,6 +44,15 @@
                 android:paddingTop="@dimen/yami_space_sm"
                 android:paddingBottom="@dimen/yami_space_sm"
                 android:background="@drawable/bg_topbar_soft">
+
+                <ImageButton
+                    android:id="@+id/btnWindows"
+                    android:layout_width="@dimen/yami_icon_btn"
+                    android:layout_height="@dimen/yami_icon_btn"
+                    android:background="@drawable/bg_icon_btn"
+                    android:src="@drawable/ic_windows"
+                    android:contentDescription="@string/cd_windows"
+                    app:tint="?attr/colorOnSurface" />
 
                 <ImageButton
                     android:id="@+id/btnBack"
@@ -91,6 +101,7 @@
 
             <!-- webview + progress + capture hint -->
             <FrameLayout
+                android:id="@+id/flWebContainer"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1">
@@ -530,6 +541,96 @@
                             android:paddingBottom="5dp"
                             android:text="@string/vpn_status_off"
                             style="@style/Yami.Text.Dim" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- ============ 代理池 / v2rayNG ============ -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_proxy"
+                    android:paddingStart="@dimen/yami_space_md"
+                    android:paddingBottom="@dimen/yami_space_sm"
+                    style="@style/Yami.Text.Label" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Yami.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/yami_space_lg">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="@dimen/yami_space_md"
+                            android:text="@string/settings_proxy_desc"
+                            style="@style/Yami.Text.Dim" />
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProxyLink"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/proxy_link_hint"
+                            android:inputType="textUri"
+                            android:maxLines="2"
+                            android:textSize="13sp"
+                            style="@style/Yami.EditText" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnProxyImport"
+                            style="@style/Yami.Button.Tonal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/yami_space_md"
+                            app:icon="@drawable/ic_download"
+                            app:iconGravity="textStart"
+                            android:text="@string/proxy_btn_import" />
+
+                        <TextView
+                            android:id="@+id/tvProxyStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/yami_space_md"
+                            android:layout_marginBottom="@dimen/yami_space_md"
+                            android:background="@drawable/bg_pill_surface"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
+                            android:text="@string/proxy_status_direct"
+                            style="@style/Yami.Text.Dim" />
+
+                        <TextView
+                            android:id="@+id/tvProxyPool"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="@dimen/yami_space_md"
+                            android:text="@string/proxy_pool_empty"
+                            android:maxLines="6"
+                            android:ellipsize="end"
+                            style="@style/Yami.Text.Body" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnConnectV2ray"
+                            style="@style/Yami.Button.Outline"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:icon="@drawable/ic_forward"
+                            app:iconGravity="textStart"
+                            android:text="@string/proxy_btn_connect_v2ray" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDisconnectProxy"
+                            style="@style/Yami.Button.Text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/yami_space_sm"
+                            android:text="@string/proxy_btn_disconnect" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

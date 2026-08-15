@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 
 	"yamiua/ai"
 	"yamiua/api"
@@ -470,6 +471,42 @@ func AiSetPlanner(on bool) string {
 	}
 	ai.SetDefaultPlannerEnabled(on)
 	return "ok"
+}
+
+// ===================== Proxy pool / upstream (v2rayNG 对接) =====================
+
+// AiSetUpstream configures the WebView/capture upstream proxy (http:// or
+// socks5://). Empty string restores direct connection. This is what makes
+// "浏览全走上游代理" work: WebView -> yami MITM -> user's v2ray/xray/SOCKS5.
+func AiSetUpstream(upstream string) string {
+	if core == nil {
+		return "err: engine not started"
+	}
+	core.SetUpstream(upstream)
+	return "ok"
+}
+
+// AiGetUpstream returns the currently configured upstream proxy ("" = direct).
+func AiGetUpstream() string {
+	if core == nil {
+		return ""
+	}
+	return core.Upstream()
+}
+
+// AiProbeUpstream checks whether an upstream proxy is actually reachable at
+// host:port. Returns "1" if reachable, "0" otherwise. Used by the proxy panel
+// to detect a running v2rayNG (127.0.0.1:10808 socks / 10809 http).
+func AiProbeUpstream(hostPort string) string {
+	if hostPort == "" {
+		return "0"
+	}
+	conn, err := net.DialTimeout("tcp", hostPort, 700*time.Millisecond)
+	if err != nil {
+		return "0"
+	}
+	conn.Close()
+	return "1"
 }
 
 // ===================== SSH session type =====================

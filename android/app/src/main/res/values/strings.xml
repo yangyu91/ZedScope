@@ -34,6 +34,14 @@
     <string name="cd_back">后退</string>
     <string name="cd_forward">前进</string>
     <string name="cd_refresh">刷新</string>
+    <string name="cd_windows">窗口</string>
+
+    <!-- 多窗口 -->
+    <string name="win_title">窗口</string>
+    <string name="win_new_browser">新建浏览器窗口</string>
+    <string name="win_ai">AI 对话</string>
+    <string name="win_ssh">SSH</string>
+    <string name="win_browser">浏览器 %1$d</string>
     <string name="cd_menu">菜单</string>
     <string name="empty_capture">还没有抓到任何请求\n用上方浏览器访问网页后，请求会实时出现在这里</string>
     <string name="empty_token">还没有提取到 Token\n登录任意网站后，检测到的凭证会自动归集到这里</string>
@@ -56,6 +64,21 @@
     <string name="settings_vpn_desc">通过 VpnService 拦截设备内全部 App 的流量（不仅是浏览器）</string>
     <string name="vpn_status_off">已关闭 · 仅浏览器内抓包</string>
     <string name="vpn_status_on">已开启 · 正在拦截全部 App 流量</string>
+
+    <!-- 代理池 / v2rayNG -->
+    <string name="section_proxy">代理池（v2rayNG 对接）</string>
+    <string name="settings_proxy_desc">导入 vmess/vless/trojan/ss/socks5 分享链接或订阅地址，连接后浏览全程走代理</string>
+    <string name="proxy_link_hint">粘贴分享链接 或 订阅地址 (https://...)</string>
+    <string name="proxy_btn_import">解析并加入代理池</string>
+    <string name="proxy_btn_connect_v2ray">连接 v2rayNG 本地代理</string>
+    <string name="proxy_btn_disconnect">断开上游代理（直连）</string>
+    <string name="proxy_status_direct">直连（未走代理）</string>
+    <string name="proxy_status_connected">已连接上游：%1$s</string>
+    <string name="proxy_pool_empty">代理池为空，先导入链接</string>
+    <string name="proxy_import_ok">已加入 %1$d 个节点</string>
+    <string name="proxy_import_fail">解析失败：%1$s</string>
+    <string name="proxy_v2ray_found">检测到 v2rayNG 本地代理 %1$s，已连接</string>
+    <string name="proxy_v2ray_missing">未检测到 v2rayNG 本地代理（10808/10809），请先在 v2rayNG 连接</string>
     <string name="vpn_permission_required">需要 VPN 权限才能全局抓包</string>
     <string name="settings_proxy_addr">抓包代理地址：%1$s</string>
     <string name="toast_vpn_started">全局抓包已启动（DEMO）</string>

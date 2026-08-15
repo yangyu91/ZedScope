@@ -25,6 +25,7 @@ package proxy
 import (
 	"fmt"
 
+	"context"
 	"crypto/tls"
 	"io"
 	"log"
@@ -33,6 +34,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,6 +94,9 @@ func (p *Proxy) SetUpstream(upstream string) {
 	p.upstream = upstream
 	p.client = newUpstreamClient(upstream)
 }
+
+// Upstream returns the currently configured upstream proxy ("" = direct).
+func (p *Proxy) Upstream() string { return p.upstream }
 
 // SetBodyDir overrides where large captured bodies are spilled to disk.
 func (p *Proxy) SetBodyDir(dir string) {
@@ -414,10 +419,99 @@ func newUpstreamClient(upstream string) *http.Client {
 	}
 	if upstream != "" {
 		if u, err := url.Parse(upstream); err == nil {
-			t.Proxy = http.ProxyURL(u)
+			switch u.Scheme {
+			case "socks5", "socks5h", "socks":
+				// Standard lib has no socks5 ProxyURL; dial through it manually.
+				host := u.Host
+				t.Proxy = func(*http.Request) (*url.URL, error) { return nil, nil } // no http proxy
+				t.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+					return dialSocks5(ctx, host, addr)
+				}
+			default:
+				t.Proxy = http.ProxyURL(u)
+			}
 		}
 	}
 	return &http.Client{Transport: t, Timeout: 0, CheckRedirect: nil}
+}
+
+// dialSocks5 opens a TCP conn to proxyHost then CONNECTs to target via SOCKS5
+// (no auth). Used for "browse through v2rayNG / xray local socks port".
+func dialSocks5(ctx context.Context, proxyHost, target string) (net.Conn, error) {
+	d := &net.Dialer{}
+	conn, err := d.DialContext(ctx, "tcp", proxyHost)
+	if err != nil {
+		return nil, err
+	}
+	// RFC1928 greeting: ver=5 nmethods=1 method=0x00(no auth)
+	if _, err := conn.Write([]byte{0x05, 0x01, 0x00}); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	reply := make([]byte, 2)
+	if _, err := io.ReadFull(conn, reply); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if reply[0] != 0x05 || reply[1] != 0x00 {
+		conn.Close()
+		return nil, fmt.Errorf("socks5 handshake: method=%d", reply[1])
+	}
+	host, portStr, err := net.SplitHostPort(target)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	port, _ := strconv.Atoi(portStr)
+	// CONNECT request
+	req := []byte{0x05, 0x01, 0x00}
+	if ip := net.ParseIP(host); ip != nil {
+		if ip4 := ip.To4(); ip4 != nil {
+			req = append(req, 0x01)
+			req = append(req, ip4...)
+		} else {
+			req = append(req, 0x04)
+			req = append(req, ip.To16()...)
+		}
+	} else {
+		req = append(req, 0x03, byte(len(host)))
+		req = append(req, host...)
+	}
+	req = append(req, byte(port>>8), byte(port&0xff))
+	if _, err := conn.Write(req); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	// response: VER REP RSV ATYP BND.ADDR BND.PORT
+	hdr := make([]byte, 4)
+	if _, err := io.ReadFull(conn, hdr); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if hdr[1] != 0x00 {
+		conn.Close()
+		return nil, fmt.Errorf("socks5 connect: rep=%d", hdr[1])
+	}
+	alen := 0
+	switch hdr[3] {
+	case 0x01:
+		alen = 4
+	case 0x04:
+		alen = 16
+	case 0x03:
+		b := make([]byte, 1)
+		if _, err := io.ReadFull(conn, b); err != nil {
+			conn.Close()
+			return nil, err
+		}
+		alen = int(b[0])
+	}
+	skip := make([]byte, alen+2)
+	if _, err := io.ReadFull(conn, skip); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return conn, nil
 }
 
 func defaultBodyDir() string {
