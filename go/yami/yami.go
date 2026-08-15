@@ -8,6 +8,7 @@ package yami
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 
 	"yamiua/ai"
 	"yamiua/api"
@@ -34,10 +35,24 @@ func Start(listenProxy, listenAPI string) string {
 	if err != nil {
 		return "err: " + err.Error()
 	}
+	// Pre-flight: verify both ports are actually bindable BEFORE claiming "ok".
+	// Otherwise Listen() failures (port in use, e.g. a zombie process) are
+	// swallowed by the background goroutine, the app sets the WebView proxy to a
+	// dead port, and the browser becomes completely unusable while Start reports
+	// success. Probe by binding+closing; the real Listen retries right after.
+	for _, addr := range []string{listenProxy, listenAPI} {
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			return "err: port " + addr + " unavailable: " + err.Error()
+		}
+		ln.Close()
+	}
 	apiSrv = api.NewAPI(core)
 	go func() {
 		if err := core.Listen(); err != nil {
-			// surfaced via logs; app should retry with another port
+			// race window between probe-close and real bind is tiny; if it
+			// still fails, the app-side TCP probe will catch it and fall back
+			// to direct (no proxy) browsing.
 		}
 	}()
 	go func() { _ = apiSrv.Listen(listenAPI) }()

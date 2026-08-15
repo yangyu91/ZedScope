@@ -79,9 +79,29 @@ jobs:
             -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=ZedScope Debug,O=ZedScope,C=US"
 
+      # Convert the project's BKS keystore (BouncyCastle) to PKCS12 so AGP can
+      # sign with the user's real key (alias/password: yangyu91). Requires the
+      # BouncyCastle provider jar; the .p12 is created in /tmp (never committed).
+      - name: Convert BKS keystore to PKCS12 (user signing key)
+        if: ${{ !cancelled() }}
+        run: |
+          wget -q https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk18on/1.78/bcprov-jdk18on-1.78.jar -O /tmp/bcprov.jar
+          keytool -importkeystore \
+            -srckeystore .keystore/yangyu91.bks -srcstoretype BKS -srcstorepass yangyu91 \
+            -srcalias yangyu91 -srckeypass yangyu91 \
+            -destkeystore /tmp/yangyu91.p12 -deststoretype PKCS12 -deststorepass yangyu91 \
+            -destalias yangyu91 \
+            -provider org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath /tmp/bcprov.jar \
+            -noprompt
+          ls -la /tmp/yangyu91.p12
+
       - name: Build release APK
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          KEYSTORE_FILE: /tmp/yangyu91.p12
+          KEYSTORE_PASSWORD: yangyu91
+          KEY_ALIAS: yangyu91
+          KEY_PASSWORD: yangyu91
         run: |
           cd android
           gradle assembleRelease

@@ -225,20 +225,46 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyWebViewProxy() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            try {
-                val config = ProxyConfig.Builder()
-                    .addProxyRule(YamiCore.proxyAddr())
-                    .build()
-                val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
-                androidx.webkit.ProxyController.getInstance()
-                    .setProxyOverride(config, executor, java.lang.Runnable { })
-            } catch (e: Throwable) {
-                // Proxy override is best-effort; never let it crash startup.
-                e.printStackTrace()
-            }
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             Toast.makeText(this, "代理拦截需要 Android 10+", Toast.LENGTH_LONG).show()
+            return
+        }
+        // Verify the capture engine is ACTUALLY listening before routing the
+        // WebView through it. If the engine failed to bind (port in use etc.)
+        // the app would otherwise point the browser at a dead proxy and every
+        // request fails — "browser completely unusable". On probe failure we
+        // fall back to DIRECT browsing and tell the user.
+        if (!tcpReachable(YamiCore.proxyAddr())) {
+            Toast.makeText(this, "抓包引擎未就绪(端口不可达)，已跳过代理，浏览器直连可用", Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            val config = ProxyConfig.Builder()
+                .addProxyRule(YamiCore.proxyAddr())
+                .build()
+            val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+            androidx.webkit.ProxyController.getInstance()
+                .setProxyOverride(config, executor, java.lang.Runnable { })
+        } catch (e: Throwable) {
+            // Proxy override is best-effort; never let it crash startup.
+            e.printStackTrace()
+        }
+    }
+
+    /** 尝试 TCP 连接 addr(host:port)，可连返回 true（探测引擎是否真的在监听）。 */
+    private fun tcpReachable(hostPort: String): Boolean {
+        return try {
+            val host = hostPort.substringBefore(":").ifBlank { "127.0.0.1" }
+            val port = hostPort.substringAfter(":").toIntOrNull() ?: return false
+            val s = java.net.Socket()
+            try {
+                s.connect(java.net.InetSocketAddress(host, port), 500)
+                true
+            } finally {
+                try { s.close() } catch (_: Throwable) {}
+            }
+        } catch (_: Throwable) {
+            false
         }
     }
 
@@ -639,38 +665,41 @@ class MainActivity : AppCompatActivity() {
     private fun installCa() {
         val pem = YamiCore.caPEM()
         if (pem.isEmpty()) {
-            Toast.makeText(this, "引擎未启动", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "引擎未启动，无法导出证书", Toast.LENGTH_LONG).show()
             return
         }
+        // 0) 先把证书写到 App 外部文件目录（用户可用 MT管理器/文件管理器访问），
+        //    并复制路径到剪贴板——即使系统安装器不弹，用户也知道证书在哪。
+        val certDir = File(getExternalFilesDir(null), "certs")
+        certDir.mkdirs()
+        val certFile = File(certDir, "ZedScope-CA.crt")
+        certFile.writeText(pem)
+        copyText(certFile.absolutePath, "zedscope-ca-path")
         val pemBytes = pem.toByteArray(Charsets.UTF_8)
-        // 主路径：系统证书安装器（API 24+），用户命名后即装好为用户 CA。
-        // 注意：EXTRA_CERTIFICATE 需要 X.509 DER 二进制（或 PKCS#7），不是 PEM 文本——
-        // 直接传 PEM 文本会让安装器解析失败并提示"未安装该证书"（Android 14 实测）。
+        // 1) 主路径：系统证书安装器（API 24+），EXTRA_CERTIFICATE 必须传 DER 二进制
         try {
             val der = pemToDer(pemBytes)
             val intent = Intent("android.credentials.INSTALL")
             intent.putExtra("android.credentials.CERTIFICATE", der)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
-            Toast.makeText(this, R.string.toast_ca_installing, Toast.LENGTH_LONG).show()
+            Toast.makeText(this,
+                "证书路径已复制：\n${certFile.absolutePath}",
+                Toast.LENGTH_LONG).show()
             return
         } catch (_: Exception) {
             // 该 intent 不可用，走文件兜底
         }
-        // 兜底：写出 .crt 并用 FileProvider 打开证书安装器（系统能正确解析 PEM 文件）
+        // 2) 兜底：FileProvider 打开 .crt（系统能正确解析 PEM 文件）
         try {
-            val dir = File(getExternalFilesDir(null), "certs")
-            dir.mkdirs()
-            val file = File(dir, "ZedScope-CA.crt")
-            file.writeText(pem)
-            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", certFile)
             val view = Intent(Intent.ACTION_VIEW)
             view.setDataAndType(uri, "application/x-x509-ca-cert")
             view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             startActivity(view)
-            Toast.makeText(this, getString(R.string.toast_ca_install_failed, file.absolutePath), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "证书文件：${certFile.absolutePath}（路径已复制）", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "证书安装失败：${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "自动安装失败，证书在：${certFile.absolutePath}（路径已复制）", Toast.LENGTH_LONG).show()
         }
     }
 
