@@ -42,7 +42,7 @@
             android:text="@string/proxy_status_direct"
             android:textSize="12sp"
             android:textStyle="bold"
-            android:textColor="@color/yami_primary"
+            android:textColor="@color/yami_accent"
             android:background="@drawable/bg_pill_accent" />
     </LinearLayout>
     <ScrollView
