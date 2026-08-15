@@ -643,10 +643,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val pemBytes = pem.toByteArray(Charsets.UTF_8)
-        // 主路径：系统证书安装器（API 24+），用户命名后即装好为用户 CA
+        // 主路径：系统证书安装器（API 24+），用户命名后即装好为用户 CA。
+        // 注意：EXTRA_CERTIFICATE 需要 X.509 DER 二进制（或 PKCS#7），不是 PEM 文本——
+        // 直接传 PEM 文本会让安装器解析失败并提示"未安装该证书"（Android 14 实测）。
         try {
+            val der = pemToDer(pemBytes)
             val intent = Intent("android.credentials.INSTALL")
-            intent.putExtra("android.credentials.CERTIFICATE", pemBytes)
+            intent.putExtra("android.credentials.CERTIFICATE", der)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
             Toast.makeText(this, R.string.toast_ca_installing, Toast.LENGTH_LONG).show()
@@ -654,7 +657,7 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             // 该 intent 不可用，走文件兜底
         }
-        // 兜底：写出 .crt 并用 FileProvider 打开证书安装器
+        // 兜底：写出 .crt 并用 FileProvider 打开证书安装器（系统能正确解析 PEM 文件）
         try {
             val dir = File(getExternalFilesDir(null), "certs")
             dir.mkdirs()
@@ -669,6 +672,16 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "证书安装失败：${e.message}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    /** 把 PEM 文本字节转成 DER 二进制（供 EXTRA_CERTIFICATE 使用）。 */
+    private fun pemToDer(pemBytes: ByteArray): ByteArray {
+        val s = String(pemBytes, Charsets.UTF_8)
+        val b64 = s
+            .replace("-----BEGIN CERTIFICATE-----", "")
+            .replace("-----END CERTIFICATE-----", "")
+            .replace(Regex("\\s"), "")
+        return android.util.Base64.decode(b64, android.util.Base64.DEFAULT)
     }
 
     private fun copyText(text: String, label: String) {
