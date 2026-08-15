@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>ZedScope</title>
+<style>
+:root{color-scheme:light;--bg:#f6f8fa;--surface:#fff;--surface2:#f0f3f6;--text:#1f2328;--muted:#59636e;--line:#d0d7de;--blue:#0969da;--blue-soft:#ddf4ff;--green:#1a7f37;--warn:#9a6700}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--text:#e6edf3;--muted:#8b949e;--line:#30363d;--blue:#58a6ff;--blue-soft:#0d419d;--green:#3fb950;--warn:#d29922}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Noto Sans SC",sans-serif}main{max-width:720px;margin:auto;padding:28px 20px 40px}.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}.hero{padding:20px 4px 22px}.hero h1{font-size:32px;line-height:1.1;margin:0 0 6px}.hero p{margin:0;color:var(--muted)}.status{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:7px 11px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-size:12px;font-weight:800}.status i{width:7px;height:7px;border-radius:50%;background:var(--green)}section{margin-top:22px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 9px}.card{background:var(--surface);border:1px solid var(--line);border-radius:15px;overflow:hidden}.item{display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}.item:last-child{border-bottom:0}.item:active{background:var(--surface2)}.icon{width:36px;height:36px;border-radius:10px;background:var(--surface2);display:grid;place-items:center;color:var(--blue);font-size:19px;font-weight:800}.grow{flex:1}.item b{display:block;font-size:15px}.item span{display:block;color:var(--muted);font-size:12px;margin-top:2px}.chev{font-size:22px;color:var(--muted)}.notice{padding:15px 16px;border:1px solid #eac54f;background:color-mix(in srgb,var(--warn) 12%,var(--surface));border-radius:15px;color:var(--text);font-size:13px}.notice b{display:block;margin-bottom:3px;color:var(--warn)}footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+</style>
+</head>
+<body><main>
+<div class="hero"><div class="eyebrow">LOCAL · AUDITABLE · PRIVATE</div><h1>ZedScope</h1><p>内置抓包调试的轻量 AI 浏览器</p><div class="status"><i></i>抓包引擎运行中</div></div>
+<div class="notice"><b>开始前先安装证书</b>HTTPS 流量需要用户 CA 才能被本机 WebView 拦截。证书只保存在你的设备上。</div>
+<section><h2>常用入口</h2><div class="card">
+<a class="item" href="yami://capture"><div class="icon">⌕</div><div class="grow"><b>网络日志</b><span>实时请求、响应、状态码和 Token</span></div><div class="chev">›</div></a>
+<a class="item" href="yami://ai"><div class="icon">✦</div><div class="grow"><b>AI 分析</b><span>分析抓包、生成 curl、执行浏览器任务</span></div><div class="chev">›</div></a>
+<a class="item" href="yami://settings"><div class="icon">⚙</div><div class="grow"><b>设置与安全</b><span>证书、代理、主题、全局抓包</span></div><div class="chev">›</div></a>
+</div></section>
+<section><h2>快速操作</h2><div class="card"><a class="item" href="yami://install-ca"><div class="icon">✓</div><div class="grow"><b>安装抓包证书</b><span>打开 Android 系统证书安装器</span></div><div class="chev">›</div></a></div></section>
+<footer>仅用于调试你本人有权限的流量 · ZedScope</footer>
+</main></body></html>

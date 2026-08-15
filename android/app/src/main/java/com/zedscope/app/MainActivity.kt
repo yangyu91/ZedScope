@@ -86,6 +86,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
     private lateinit var typingDots: com.zedscope.app.ui.TypingDots
     private val chatHandler = Handler(Looper.getMainLooper())
+    private val sshStreamHandler = Handler(Looper.getMainLooper())
+    private val ioExecutor = java.util.concurrent.Executors.newCachedThreadPool()
 
     // SSH 独立窗口
     private lateinit var sshAdapter: ChatAdapter
@@ -196,6 +198,15 @@ class MainActivity : AppCompatActivity() {
         setupSshPanel()
         loadHome()
         boot("UI ready")
+    }
+
+    override fun onDestroy() {
+        chatHandler.removeCallbacksAndMessages(null)
+        sshStreamHandler.removeCallbacksAndMessages(null)
+        if (::aiBridge.isInitialized) aiBridge.stop()
+        ioExecutor.shutdownNow()
+        browserWebViews.forEach { it.stopLoading(); it.destroy() }
+        super.onDestroy()
     }
 
     /**
@@ -410,7 +421,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.btnProxyImport).setOnClickListener {
             val link = etLink.text.toString().trim()
             if (link.isEmpty()) { Toast.makeText(this, "请粘贴链接", Toast.LENGTH_SHORT).show(); return@setOnClickListener }
-            Thread {
+            ioExecutor.execute {
                 val nodes = parseProxyLinks(link)
                 runOnUiThread {
                     if (nodes.isEmpty()) {
@@ -422,20 +433,24 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, getString(R.string.proxy_import_ok, nodes.size), Toast.LENGTH_SHORT).show()
                     }
                 }
-            }.start()
+            }
         }
 
         // 连接 v2rayNG：探测其默认本地代理端口
         findViewById<android.view.View>(R.id.btnConnectV2ray).setOnClickListener {
-            val candidates = listOf("127.0.0.1:10808", "127.0.0.1:10809", "127.0.0.1:1080")
-            var found = ""
-            for (c in candidates) { if (YamiCore.aiProbeUpstream(c)) { found = c; break } }
-            if (found.isEmpty()) {
-                Toast.makeText(this, R.string.proxy_v2ray_missing, Toast.LENGTH_LONG).show()
-            } else {
-                YamiCore.aiSetUpstream("socks5://$found")
-                tvStatus.text = getString(R.string.proxy_status_connected, "socks5://$found")
-                Toast.makeText(this, getString(R.string.proxy_v2ray_found, found), Toast.LENGTH_SHORT).show()
+            ioExecutor.execute {
+                val candidates = listOf("127.0.0.1:10808", "127.0.0.1:10809", "127.0.0.1:1080")
+                var found = ""
+                for (c in candidates) { if (YamiCore.aiProbeUpstream(c)) { found = c; break } }
+                runOnUiThread {
+                    if (found.isEmpty()) {
+                        Toast.makeText(this, R.string.proxy_v2ray_missing, Toast.LENGTH_LONG).show()
+                    } else {
+                        YamiCore.aiSetUpstream("socks5://$found")
+                        tvStatus.text = getString(R.string.proxy_status_connected, "socks5://$found")
+                        Toast.makeText(this, getString(R.string.proxy_v2ray_found, found), Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
 
@@ -654,14 +669,14 @@ class MainActivity : AppCompatActivity() {
             chatAdapter.add(ChatMsg("user", "分析最近一条抓包（token 泄露 / 注入风险 + 可复制 curl）"))
             updateChatEmpty()
             showTyping()
-            Thread {
+            ioExecutor.execute {
                 val r = YamiCore.aiAnalyze(id, "请分析这条请求：有无 token 泄露/注入风险？给可复制的 curl。")
                 runOnUiThread {
                     hideTyping()
                     chatAdapter.add(ChatMsg("ai", ""))
                     streamInto(r.ifBlank { "（暂无抓包数据，先去浏览器访问网页）" })
                 }
-            }.start()
+            }
         }
 
         // 有会话的聊天发送（省token：上下文压缩）
@@ -673,14 +688,14 @@ class MainActivity : AppCompatActivity() {
             chatAdapter.add(ChatMsg("user", task))
             updateChatEmpty()
             showTyping()
-            Thread {
+            ioExecutor.execute {
                 val r = YamiCore.aiChatSession(currentSessionId, task)
                 runOnUiThread {
                     hideTyping()
                     chatAdapter.add(ChatMsg("ai", ""))
                     streamInto(r.ifBlank { "（AI 未返回内容）" })
                 }
-            }.start()
+            }
         }
 
         // Agent 操控浏览器（也在会话里，省token）
@@ -720,7 +735,7 @@ class MainActivity : AppCompatActivity() {
             val user = etSshUser.text.toString().ifBlank { "root" }
             val auth = if (switchSshKey.isChecked) "key" else "password"
             val secret = etSshSecret.text.toString()
-            Thread {
+            ioExecutor.execute {
                 val id = YamiCore.aiSshConnect(host, user, auth, secret)
                 runOnUiThread {
                     if (id.startsWith("err:")) {
@@ -731,7 +746,7 @@ class MainActivity : AppCompatActivity() {
                         tvSshStatus.text = getString(R.string.ssh_connected, id)
                     }
                 }
-            }.start()
+            }
         }
         etSshCmd.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_GO) { runSshCmd(sshId); true } else false
@@ -747,14 +762,14 @@ class MainActivity : AppCompatActivity() {
         sshAdapter.add(ChatMsg("user", "SSH $sshId \$ $cmd"))
         updateSshEmpty()
         showSshTyping()
-        Thread {
+        ioExecutor.execute {
             val r = YamiCore.aiSshExec(sshId, cmd)
             runOnUiThread {
                 hideSshTyping()
                 sshAdapter.add(ChatMsg("ai", ""))
-                streamInto(r.ifBlank { "（无输出）" }, sshAdapter, rvSshOut)
+                streamInto(r.ifBlank { "（无输出）" }, sshAdapter, rvSshOut, sshStreamHandler)
             }
-        }.start()
+        }
     }
 
     private fun updateSshEmpty() {
@@ -776,20 +791,19 @@ class MainActivity : AppCompatActivity() {
         chatAdapter.add(ChatMsg("user", task))
         updateChatEmpty()
         showTyping()
-        Thread {
+        ioExecutor.execute {
             val r = YamiCore.aiAgentRunSession(currentSessionId, task)
             runOnUiThread {
                 hideTyping()
                 chatAdapter.add(ChatMsg("ai", ""))
                 streamInto(r.ifBlank { "（Agent 未返回内容）" })
             }
-        }.start()
+        }
     }
 
     /** 打字机式流式：把完整文本逐帧写入指定适配器的最后一个气泡。 */
-    private fun streamInto(full: String, adapter: ChatAdapter = chatAdapter, rv: RecyclerView = rvChat) {
+    private fun streamInto(full: String, adapter: ChatAdapter = chatAdapter, rv: RecyclerView = rvChat, handler: Handler = chatHandler) {
         if (full.isBlank()) { adapter.updateLast("（无内容）"); return }
-        chatHandler.removeCallbacksAndMessages(null)
         var shown = 0
         val step = 4
         val runnable = object : Runnable {
@@ -797,10 +811,10 @@ class MainActivity : AppCompatActivity() {
                 shown = minOf(full.length, shown + step)
                 adapter.updateLast(full.substring(0, shown))
                 rv.scrollToPosition(adapter.itemCount - 1)
-                if (shown < full.length) chatHandler.postDelayed(this, 18)
+                if (shown < full.length) handler.postDelayed(this, 18)
             }
         }
-        chatHandler.post(runnable)
+        handler.post(runnable)
     }
 
     private fun updateChatEmpty() {
@@ -839,8 +853,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadHome() {
-        // 起始页（home.html / WebView UI）已移除，加载空白页避免引用已删除资产。
-        webView.loadUrl("about:blank")
+        webView.loadUrl("file:///android_asset/home.html")
         etUrl.setText("")
     }
 
@@ -1162,8 +1175,7 @@ class MainActivity : AppCompatActivity() {
             else if (scrollY < oldScrollY - 12 && uiHidden) showChrome()
         }
         switchBrowserWindow(browserWebViews.size - 1)
-        // 起始页（home.html / WebView UI）已移除，加载空白页避免引用已删除资产。
-        wv.loadUrl("about:blank")
+        wv.loadUrl("file:///android_asset/home.html")
         Toast.makeText(this, getString(R.string.win_browser, browserWebViews.size), Toast.LENGTH_SHORT).show()
     }
 

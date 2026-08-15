@@ -120,6 +120,21 @@
         <item name="rippleColor">@color/yami_accent_ripple</item>
     </style>
 
+    <style name="Yami.Button.Primary" parent="Widget.Material3.Button">
+        <item name="cornerRadius">@dimen/yami_radius_md</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="backgroundTint">@color/yami_accent</item>
+        <item name="android:textColor">@color/yami_on_accent</item>
+        <item name="rippleColor">@color/yami_accent_ripple</item>
+    </style>
+
+    <style name="Yami.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="cornerRadius">@dimen/yami_radius_md</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/yami_accent</item>
+        <item name="rippleColor">@color/yami_accent_ripple</item>
+    </style>
+
     <!-- Neutral (secondary) action -->
     <style name="Yami.Button.Outline" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">@dimen/yami_radius_md</item>
@@ -227,6 +242,13 @@
         <item name="android:fontFamily">monospace</item>
     </style>
     <!-- Section label above a group: small, dim, tracked-out uppercase -->
+    <style name="Yami.Text.Section" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textColor">@color/yami_on_surface_dim</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
     <style name="Yami.Text.Label" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textColor">@color/yami_on_surface_faint</item>
         <item name="android:letterSpacing">0.10</item>

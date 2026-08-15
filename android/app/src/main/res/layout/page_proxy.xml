@@ -1,28 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  代理独立窗口页。ID 契约与 MainActivity.setupProxyPanel() 对应：
-  btnProxyBack etProxyLink btnProxyImport tvProxyStatus tvProxyPool
-  btnConnectV2ray btnDisconnectProxy
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/yami_bg">
-
-    <!-- 窗口顶栏 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="@dimen/yami_space_sm"
-        android:paddingEnd="@dimen/yami_space_sm"
+        android:paddingStart="@dimen/yami_space_md"
+        android:paddingEnd="@dimen/yami_space_md"
         android:paddingTop="@dimen/yami_space_sm"
         android:paddingBottom="@dimen/yami_space_sm"
         android:background="@drawable/bg_topbar_soft">
-
         <ImageButton
             android:id="@+id/btnProxyBack"
             android:layout_width="@dimen/yami_icon_btn"
@@ -31,128 +22,117 @@
             android:src="@drawable/ic_back"
             android:contentDescription="@string/cd_back"
             app:tint="?attr/colorOnSurface" />
-
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="@dimen/yami_space_sm"
             android:text="@string/section_proxy"
-            style="@style/Yami.Text.Title"
-            android:textSize="@dimen/yami_title_size" />
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface" />
+        <TextView
+            android:id="@+id/tvProxyStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:text="@string/proxy_status_direct"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/yami_primary"
+            android:background="@drawable/bg_pill_accent" />
     </LinearLayout>
-
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true"
         android:scrollbars="none">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="@dimen/yami_space_lg"
-            android:paddingEnd="@dimen/yami_space_lg"
-            android:paddingTop="@dimen/yami_space_md"
-            android:paddingBottom="@dimen/yami_space_xl">
-
-            <!-- 当前状态 -->
+            android:padding="@dimen/yami_space_lg">
             <TextView
-                android:id="@+id/tvProxyStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="导入 vmess / vless / trojan / ss / socks5 分享链接或订阅地址。"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_pill_surface"
-                android:paddingStart="@dimen/yami_space_md"
-                android:paddingEnd="@dimen/yami_space_md"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
-                android:text="@string/proxy_status_direct"
-                style="@style/Yami.Text.Body" />
-
+                android:layout_marginTop="@dimen/yami_space_lg"
+                android:text="导入"
+                style="@style/Yami.Text.Section" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="@dimen/yami_space_lg"
-                android:gravity="center_vertical">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnConnectV2ray"
-                    style="@style/Yami.Button.Tonal"
-                    android:layout_width="0dp"
+                android:layout_marginTop="@dimen/yami_space_sm"
+                android:orientation="vertical"
+                android:padding="@dimen/yami_space_md"
+                android:background="@drawable/bg_card">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etProxyLink"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="@dimen/yami_space_sm"
-                    app:icon="@drawable/ic_forward"
-                    app:iconGravity="textStart"
-                    android:text="@string/proxy_btn_connect_v2ray" />
-
+                    android:hint="粘贴分享链接或订阅地址"
+                    android:inputType="textUri"
+                    android:maxLines="3"
+                    style="@style/Yami.EditText" />
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDisconnectProxy"
-                    style="@style/Yami.Button.Outline"
-                    android:layout_width="0dp"
+                    android:id="@+id/btnProxyImport"
+                    style="@style/Yami.Button.Primary"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/yami_space_sm"
-                    android:text="@string/proxy_btn_disconnect" />
+                    android:layout_marginTop="@dimen/yami_space_sm"
+                    android:text="解析并加入代理池" />
             </LinearLayout>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/yami_space_xl"
-                android:paddingStart="@dimen/yami_space_md"
-                android:paddingBottom="@dimen/yami_space_sm"
-                android:text="@string/proxy_import_group"
-                style="@style/Yami.Text.Label" />
-
-            <!-- 导入区 -->
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etProxyLink"
+                android:layout_marginTop="@dimen/yami_space_lg"
+                android:text="代理池"
+                style="@style/Yami.Text.Section" />
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/proxy_link_hint"
-                android:inputType="textUri"
-                android:maxLines="2"
-                android:textSize="13sp"
-                style="@style/Yami.EditText" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnProxyImport"
-                style="@style/Yami.Button.Tonal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/yami_space_md"
-                app:icon="@drawable/ic_download"
-                app:iconGravity="textStart"
-                android:text="@string/proxy_btn_import" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/yami_space_xl"
-                android:paddingStart="@dimen/yami_space_md"
-                android:paddingBottom="@dimen/yami_space_sm"
-                android:text="@string/proxy_pool_group"
-                style="@style/Yami.Text.Label" />
-
-            <!-- 代理池列表 -->
-            <TextView
-                android:id="@+id/tvProxyPool"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lineSpacingExtra="4dp"
-                android:text="@string/proxy_pool_empty"
-                style="@style/Yami.Text.Body" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/yami_space_md"
-                android:text="@string/proxy_pool_hint"
-                android:textSize="12sp"
-                style="@style/Yami.Text.Dim" />
+                android:layout_marginTop="@dimen/yami_space_sm"
+                android:orientation="vertical"
+                android:padding="@dimen/yami_space_md"
+                android:background="@drawable/bg_card">
+                <TextView
+                    android:id="@+id/tvProxyPool"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="84dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/proxy_pool_empty"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="@dimen/yami_space_sm">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnectV2ray"
+                        style="@style/Yami.Button.Outline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="连接 v2rayNG" />
+                    <Space android:layout_width="@dimen/yami_space_sm" android:layout_height="1dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDisconnectProxy"
+                        style="@style/Yami.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="恢复直连" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
