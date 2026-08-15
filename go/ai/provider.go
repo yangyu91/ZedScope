@@ -43,6 +43,7 @@ type Provider struct {
 	Protocol      string `json:"protocol"`      // Proto*
 	UpstreamProxy string `json:"upstream_proxy"` // "" => use engine default proxy
 	Cookies       string `json:"cookies"`       // only for deepseek-web (session)
+	Token         string `json:"token"`         // only for deepseek-web: Bearer userToken (localStorage) like deepseek-pp
 	Healthy       bool   `json:"healthy"`
 }
 
@@ -156,9 +157,7 @@ func (r *Registry) probeOne(p *Provider) bool {
 		if err != nil {
 			return false
 		}
-		if p.Cookies != "" {
-			req.Header.Set("Cookie", p.Cookies)
-		}
+		applyDsWebClientHeaders(req, p)
 		resp, err := c.Do(req)
 		if err != nil {
 			return false

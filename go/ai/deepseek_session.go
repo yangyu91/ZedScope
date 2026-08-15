@@ -15,6 +15,8 @@ type DeepseekWebSession struct {
 	RequestMessageID string
 	Model            string // "deepseek-chat" | "deepseek-reasoner"
 	Reasoning        string // accumulated thinking chain of the last turn
+	PowHeader        string // cached x-ds-pow-response value
+	PowExpireAt      int64  // unix seconds when PowHeader expires
 }
 
 // DeepseekWebSessionStore maps yami session keys to DeepSeek web sessions.

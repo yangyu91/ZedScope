@@ -423,9 +423,14 @@ func newUpstreamClient(upstream string) *http.Client {
 			case "socks5", "socks5h", "socks":
 				// Standard lib has no socks5 ProxyURL; dial through it manually.
 				host := u.Host
+				user, pass := "", ""
+				if u.User != nil {
+					user = u.User.Username()
+					pass, _ = u.User.Password()
+				}
 				t.Proxy = func(*http.Request) (*url.URL, error) { return nil, nil } // no http proxy
 				t.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-					return dialSocks5(ctx, host, addr)
+					return dialSocks5(ctx, host, user, pass, addr)
 				}
 			default:
 				t.Proxy = http.ProxyURL(u)
@@ -435,28 +440,66 @@ func newUpstreamClient(upstream string) *http.Client {
 	return &http.Client{Transport: t, Timeout: 0, CheckRedirect: nil}
 }
 
-// dialSocks5 opens a TCP conn to proxyHost then CONNECTs to target via SOCKS5
-// (no auth). Used for "browse through v2rayNG / xray local socks port".
-func dialSocks5(ctx context.Context, proxyHost, target string) (net.Conn, error) {
+// dialSocks5 opens a TCP conn to proxyHost then CONNECTs to target via SOCKS5.
+// Supports optional username/password auth (RFC1929). Used for "browse through
+// v2rayNG / xray local socks port" and for authenticated socks nodes from
+// subscriptions.
+func dialSocks5(ctx context.Context, proxyHost, user, pass, target string) (net.Conn, error) {
 	d := &net.Dialer{}
 	conn, err := d.DialContext(ctx, "tcp", proxyHost)
 	if err != nil {
 		return nil, err
 	}
-	// RFC1928 greeting: ver=5 nmethods=1 method=0x00(no auth)
-	if _, err := conn.Write([]byte{0x05, 0x01, 0x00}); err != nil {
-		conn.Close()
-		return nil, err
+
+	// RFC1928 greeting: ver=5 nmethods=1(no auth) or 2(no auth+userpass)
+	if user != "" {
+		if _, err := conn.Write([]byte{0x05, 0x02, 0x00, 0x02}); err != nil {
+			conn.Close()
+			return nil, err
+		}
+	} else {
+		if _, err := conn.Write([]byte{0x05, 0x01, 0x00}); err != nil {
+			conn.Close()
+			return nil, err
+		}
 	}
 	reply := make([]byte, 2)
 	if _, err := io.ReadFull(conn, reply); err != nil {
 		conn.Close()
 		return nil, err
 	}
-	if reply[0] != 0x05 || reply[1] != 0x00 {
+	if reply[0] != 0x05 {
 		conn.Close()
-		return nil, fmt.Errorf("socks5 handshake: method=%d", reply[1])
+		return nil, fmt.Errorf("socks5: bad version %d", reply[0])
 	}
+	// RFC1929 username/password sub-negotiation
+	if user != "" {
+		if reply[1] != 0x02 {
+			conn.Close()
+			return nil, fmt.Errorf("socks5: server rejects user/pass auth (method=%d)", reply[1])
+		}
+		ub := []byte{0x01, byte(len(user))}
+		ub = append(ub, user...)
+		ub = append(ub, byte(len(pass)))
+		ub = append(ub, pass...)
+		if _, err := conn.Write(ub); err != nil {
+			conn.Close()
+			return nil, err
+		}
+		ar := make([]byte, 2)
+		if _, err := io.ReadFull(conn, ar); err != nil {
+			conn.Close()
+			return nil, err
+		}
+		if ar[1] != 0x00 {
+			conn.Close()
+			return nil, fmt.Errorf("socks5: auth failed status=%d", ar[1])
+		}
+	} else if reply[1] != 0x00 {
+		conn.Close()
+		return nil, fmt.Errorf("socks5: handshake method=%d", reply[1])
+	}
+
 	host, portStr, err := net.SplitHostPort(target)
 	if err != nil {
 		conn.Close()

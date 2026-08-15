@@ -37,6 +37,7 @@ data class Provider(
     val protocol: String = "openai",
     val upstream_proxy: String = "",
     val cookies: String = "",
+    val token: String = "",      // deepseek-web: Bearer userToken (localStorage), like deepseek-pp
     val healthy: Boolean = true
 )
 
@@ -103,7 +104,8 @@ object YamiCore {
         val json = gson.toJson(mapOf(
             "name" to p.name, "base_url" to p.base_url, "api_key" to p.api_key,
             "model" to p.model, "protocol" to p.protocol,
-            "upstream_proxy" to p.upstream_proxy, "cookies" to p.cookies
+            "upstream_proxy" to p.upstream_proxy, "cookies" to p.cookies,
+            "token" to p.token
         ))
         Yami.aiSetProvider(json) == "ok"
     } catch (e: Throwable) { false }

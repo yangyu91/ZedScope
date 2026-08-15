@@ -2,6 +2,7 @@ package ai
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ErrDeepseekLoginRequired is returned when the DeepSeek web session cookie is
@@ -23,6 +25,208 @@ var dsWebBaseURL = "https://chat.deepseek.com"
 
 func dsWebCompletionURL() string {
 	return strings.TrimRight(dsWebBaseURL, "/") + "/api/v0/chat/completion"
+}
+
+func dsWebAPIURL(path string) string {
+	return strings.TrimRight(dsWebBaseURL, "/") + path
+}
+
+// applyDsWebClientHeaders mirrors deepseek-pp's createClientHeaders so the free
+// bridge is indistinguishable from the logged-in web page: Bearer userToken
+// (localStorage) plus x-client-* headers. Cookies are added separately when
+// present (older sessions / browsers that still rely on the cookie jar).
+func applyDsWebClientHeaders(hreq *http.Request, p *Provider) {
+	if p == nil {
+		return
+	}
+	if p.Token != "" {
+		hreq.Header.Set("Authorization", "Bearer "+p.Token)
+	}
+	hreq.Header.Set("X-App-Version", "2.0.0")
+	hreq.Header.Set("x-client-platform", "web")
+	hreq.Header.Set("x-client-version", "2.0.0")
+	hreq.Header.Set("x-client-locale", "zh-CN")
+	_, offset := time.Now().Zone()
+	hreq.Header.Set("x-client-timezone-offset", strconv.FormatInt(int64(offset), 10))
+	if p.Cookies != "" {
+		hreq.Header.Set("Cookie", p.Cookies)
+	}
+}
+
+// dsWebPostJSON posts a JSON body to a DeepSeek web API path with the
+// provider's cookies and returns the parsed JSON object. Login-expired
+// responses map to ErrDeepseekLoginRequired.
+func dsWebPostJSON(reg *Registry, p *Provider, path string, body any) (map[string]json.RawMessage, error) {
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	hreq, err := http.NewRequest(http.MethodPost, dsWebAPIURL(path), bytes.NewReader(buf))
+	if err != nil {
+		return nil, err
+	}
+	hreq.Header.Set("Content-Type", "application/json")
+	hreq.Header.Set("Accept", "application/json")
+	hreq.Header.Set("accept-charset", "UTF-8")
+	if p.Cookies == "" && p.Token == "" {
+		return nil, ErrDeepseekLoginRequired
+	}
+	applyDsWebClientHeaders(hreq, p)
+
+	resp, err := httpClientFor(reg, p).Do(hreq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	snippet, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		if IsDeepseekLoginRequired(resp.StatusCode, string(snippet)) {
+			return nil, ErrDeepseekLoginRequired
+		}
+		return nil, fmt.Errorf("deepseek-web %s: %d: %s", path, resp.StatusCode, strings.TrimSpace(string(snippet)))
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(snippet, &raw); err != nil {
+		return nil, fmt.Errorf("deepseek-web %s: bad json: %s", path, strings.TrimSpace(string(snippet)))
+	}
+	return raw, nil
+}
+
+// dsWebCreateSession creates a server-side chat session (mirrors what the web
+// page / deepseek-pp does before the first completion). Best-effort: a failure
+// returns "" so callers can still fall back to a temporary session.
+func dsWebCreateSession(reg *Registry, p *Provider) (string, error) {
+	raw, err := dsWebPostJSON(reg, p, "/api/v0/chat_session/create", map[string]any{"agent": "chat"})
+	if err != nil {
+		return "", err
+	}
+	var data struct {
+		BizData struct {
+			ID          string `json:"id"`
+			ChatSession struct {
+				ID string `json:"id"`
+			} `json:"chat_session"`
+		} `json:"biz_data"`
+	}
+	if err := json.Unmarshal(raw["data"], &data); err != nil {
+		return "", err
+	}
+	if id := strings.TrimSpace(data.BizData.ID); id != "" {
+		return id, nil
+	}
+	if id := strings.TrimSpace(data.BizData.ChatSession.ID); id != "" {
+		return id, nil
+	}
+	return "", errors.New("deepseek-web: session create returned no id")
+}
+
+// dsWebEnsureSessionID creates a server-side chat session when the session has
+// none yet. Failure is non-fatal (temporary sessions are still accepted by the
+// completion endpoint in most cases).
+func dsWebEnsureSessionID(reg *Registry, p *Provider, s *DeepseekWebSession) {
+	if s.ChatSessionID != "" {
+		return
+	}
+	if id, err := dsWebCreateSession(reg, p); err == nil && id != "" {
+		s.ChatSessionID = id
+	}
+}
+
+// dsWebFetchPowChallenge obtains a fresh PoW challenge for the completion
+// target from POST /api/v0/chat/create_pow_challenge.
+func dsWebFetchPowChallenge(reg *Registry, p *Provider) (*deepseekPowChallenge, error) {
+	raw, err := dsWebPostJSON(reg, p, "/api/v0/chat/create_pow_challenge", map[string]any{"target_path": "/api/v0/chat/completion"})
+	if err != nil {
+		return nil, err
+	}
+	var resp struct {
+		BizData struct {
+			Challenge map[string]json.RawMessage `json:"challenge"`
+		} `json:"biz_data"`
+	}
+	if err := json.Unmarshal(raw["data"], &resp); err != nil {
+		return nil, err
+	}
+	ch := resp.BizData.Challenge
+	if len(ch) == 0 {
+		return nil, errors.New("deepseek-web: pow challenge missing in response")
+	}
+	getStr := func(keys ...string) string {
+		for _, k := range keys {
+			if v, ok := ch[k]; ok {
+				var s string
+				if json.Unmarshal(v, &s) == nil {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+	getInt := func(keys ...string) int64 {
+		for _, k := range keys {
+			if v, ok := ch[k]; ok {
+				var n int64
+				if json.Unmarshal(v, &n) == nil {
+					return n
+				}
+				var f float64
+				if json.Unmarshal(v, &f) == nil {
+					return int64(f)
+				}
+			}
+		}
+		return 0
+	}
+	return &deepseekPowChallenge{
+		Algorithm:  getStr("algorithm"),
+		Challenge:  getStr("challenge"),
+		Salt:       getStr("salt"),
+		ExpireAt:   getInt("expireAt", "expire_at"),
+		Difficulty: getInt("difficulty"),
+		Signature:  getStr("signature"),
+		TargetPath: getStr("target_path", "targetPath"),
+	}, nil
+}
+
+// dsWebEnsurePowHeader returns a valid x-ds-pow-response header for the
+// completion target, solving a fresh challenge when the cached one has expired
+// (or is missing). The header is cached on the session until expireAt.
+func dsWebEnsurePowHeader(reg *Registry, p *Provider, s *DeepseekWebSession) (string, error) {
+	now := time.Now().Unix()
+	if s.PowHeader != "" && s.PowExpireAt > now+5 {
+		return s.PowHeader, nil
+	}
+	ch, err := dsWebFetchPowChallenge(reg, p)
+	if err != nil {
+		return "", err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	header, err := deepseekPowSolveAndBuildHeader(ctx, ch)
+	if err != nil {
+		return "", err
+	}
+	s.PowHeader = header
+	s.PowExpireAt = ch.ExpireAt
+	return header, nil
+}
+
+// dsWebNeedsPowRefresh reports whether a completion failure hints at an
+// expired/invalid PoW (so the caller should solve a fresh challenge and retry).
+func dsWebNeedsPowRefresh(status int, body string) bool {
+	if status == http.StatusForbidden || status == http.StatusTooManyRequests {
+		return true
+	}
+	b := strings.ToLower(body)
+	for _, m := range []string{"pow", "challenge", "verification failed", "proof-of-work", "anti-crawl"} {
+		if strings.Contains(b, m) {
+			return true
+		}
+	}
+	return false
 }
 
 // ---- SSE event parsing (pure, testable) ----
@@ -304,36 +508,68 @@ func callDeepseekWebStream(reg *Registry, p *Provider, req *ChatCompletionReques
 		modelName = "deepseek-reasoner"
 	}
 
-	body := buildDsWebCompletionBody(session, prompt, modelType)
+	// chat.deepseek.com now requires a server-side chat session + PoW header on
+	// completion (same as the web page / deepseek-pp flow). Bootstrap both and
+	// cache the PoW answer on the session until it expires.
+	dsWebEnsureSessionID(reg, p, session)
+
+	// Build the body AFTER session bootstrap so the first request already
+	// carries the server-side chat_session_id (temporary sessions with an empty
+	// id are accepted in most cases but the real session is safer).
+	var (
+		body    map[string]interface{}
+		buf     []byte
+		resp    *http.Response
+		respErr error
+	)
+	body = buildDsWebCompletionBody(session, prompt, modelType)
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return session, "", "", err
 	}
 
-	hreq, err := http.NewRequest(http.MethodPost, dsWebCompletionURL(), bytes.NewReader(buf))
-	if err != nil {
-		return session, "", "", err
-	}
-	hreq.Header.Set("Content-Type", "application/json")
-	hreq.Header.Set("Accept", "text/event-stream")
-	if p.Cookies == "" {
-		return session, "", "", ErrDeepseekLoginRequired
-	}
-	hreq.Header.Set("Cookie", p.Cookies)
+	for attempt := 0; attempt < 2; attempt++ {
+		powHeader, err := dsWebEnsurePowHeader(reg, p, session)
+		if err != nil {
+			return session, "", "", fmt.Errorf("deepseek-web pow: %w", err)
+		}
 
-	resp, err := httpClientFor(reg, p).Do(hreq)
-	if err != nil {
-		return session, "", "", err
-	}
-	defer resp.Body.Close()
+		hreq, err := http.NewRequest(http.MethodPost, dsWebCompletionURL(), bytes.NewReader(buf))
+		if err != nil {
+			return session, "", "", err
+		}
+		hreq.Header.Set("Content-Type", "application/json")
+		hreq.Header.Set("Accept", "text/event-stream")
+		hreq.Header.Set("x-ds-pow-response", powHeader)
+		if p.Cookies == "" && p.Token == "" {
+			return session, "", "", ErrDeepseekLoginRequired
+		}
+		applyDsWebClientHeaders(hreq, p)
 
-	if resp.StatusCode != http.StatusOK {
+		resp, respErr = httpClientFor(reg, p).Do(hreq)
+		if respErr != nil {
+			return session, "", "", respErr
+		}
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
 		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		resp.Body.Close()
 		if IsDeepseekLoginRequired(resp.StatusCode, string(snippet)) {
 			return session, "", "", ErrDeepseekLoginRequired
 		}
+		// PoW expired mid-flight: solve a fresh challenge and retry once.
+		if dsWebNeedsPowRefresh(resp.StatusCode, string(snippet)) && attempt == 0 {
+			session.PowHeader = ""
+			session.PowExpireAt = 0
+			continue
+		}
 		return session, "", "", fmt.Errorf("deepseek-web %d: %s", resp.StatusCode, strings.TrimSpace(string(snippet)))
 	}
+	if resp == nil {
+		return session, "", "", respErr
+	}
+	defer resp.Body.Close()
 
 	ct := resp.Header.Get("Content-Type")
 	if !strings.Contains(ct, "text/event-stream") {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -50,11 +51,36 @@ func newMockOpenAI(toolFirst bool, calls *int32) *httptest.Server {
 }
 
 // ---- mock DeepSeek web SSE backend ----
+//
+// Implements the full deepseek++ protocol: session create, PoW challenge
+// (challenge = DeepSeekHashV1(salt_expireAt_answer) for answer 42, solvable
+// within difficulty), and the completion SSE stream.
 
 func newMockDeepseekWeb() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Cookie") == "" {
+		if r.Header.Get("Cookie") == "" && r.Header.Get("Authorization") == "" {
 			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/api/v0/chat_session/create":
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"code":0,"data":{"biz_data":{"id":"mock-session"}}}`)
+			return
+		case "/api/v0/chat/create_pow_challenge":
+			salt := "test-salt"
+			expire := int64(4102444800) // far future
+			prefix := salt + "_" + strconv.FormatInt(expire, 10) + "_"
+			h := deepseekPowHashV1([]byte(prefix + "42"))
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"code":0,"data":{"biz_data":{"challenge":{"algorithm":"DeepSeekHashV1","challenge":"%x","salt":"%s","difficulty":100,"expire_at":%d,"signature":"mock-sig","target_path":"/api/v0/chat/completion"}}}}`, h, salt, expire)
+			return
+		}
+		// completion SSE (default path): require the PoW header, like the real
+		// server does.
+		if r.Header.Get("x-ds-pow-response") == "" {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, `{"code":40010,"msg":"pow challenge required"}`)
 			return
 		}
 		w.Header().Set("Content-Type", "text/event-stream")

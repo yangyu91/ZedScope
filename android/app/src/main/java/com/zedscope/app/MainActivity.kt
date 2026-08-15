@@ -427,35 +427,72 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 解析分享链接/订阅：单个 vmess:// 等直接解析；http(s):// 当订阅拉取。返回节点列表。 */
+    /** 解析分享链接/订阅：单个 vmess:// 等直接解析；http(s):// 当订阅拉取。
+     *  订阅内容支持三种形态：纯分享链接逐行、base64 整包(按行解码后逐行解析)、
+     *  或每行一条 base64 编码的链接（v2rayNG/机场订阅常见）。节点名做 URL 解码。 */
     private fun parseProxyLinks(link: String): List<Map<String, String>> {
         val out = mutableListOf<Map<String, String>>()
         if (link.startsWith("http://") || link.startsWith("https://")) {
-            // 订阅 URL：拉取内容，按行切分分享链接
+            // 订阅 URL：拉取内容
             return try {
                 val conn = java.net.URL(link).openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 8000; conn.readTimeout = 8000
                 conn.instanceFollowRedirects = true
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 ZedScope/1.1")
                 val body = conn.inputStream.bufferedReader().readText()
                 conn.disconnect()
-                body.lines().forEach { ln ->
-                    val l = ln.trim()
-                    if (l.isNotEmpty()) parseProxyLinks(l).forEach { out.add(it) }
-                }
+                parseSubscriptionBody(body, out)
                 out
             } catch (e: Exception) { out }
         }
-        // 单个链接
-        val parsed = YamiCore.aiProtoParse(link)
-        if (parsed.startsWith("err:")) return out
-        return try {
+        parseOneLink(link, out)
+        return out
+    }
+
+    /** 处理订阅正文：先尝试按行解析，若是 base64 形态则解码后再解析。 */
+    private fun parseSubscriptionBody(body: String, out: MutableList<Map<String, String>>) {
+        val lines = body.split('\n', '\r').map { it.trim() }.filter { it.isNotEmpty() }
+        // 尝试整包 base64 解码（去掉空白后整体 base64）
+        if (lines.size <= 3) {
+            val joined = lines.joinToString("")
+            try {
+                val dec = String(android.util.Base64.decode(joined, android.util.Base64.DEFAULT), Charsets.UTF_8)
+                if (dec.contains("://")) {
+                    dec.split('\n', '\r').map { it.trim() }.filter { it.isNotEmpty() }.forEach { parseOneLink(it, out) }
+                    return
+                }
+            } catch (_: Exception) {}
+        }
+        // 每行独立处理：直接链接 or 单行 base64
+        lines.forEach { ln ->
+            if (ln.contains("://")) parseOneLink(ln, out)
+            else {
+                try {
+                    val dec = String(android.util.Base64.decode(ln, android.util.Base64.DEFAULT), Charsets.UTF_8)
+                    if (dec.contains("://")) parseOneLink(dec, out)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    /** 解析单个分享链接（含 URL 编码名称解码），加入 out。 */
+    private fun parseOneLink(link: String, out: MutableList<Map<String, String>>) {
+        val l = link.trim()
+        if (!l.contains("://")) return
+        val parsed = YamiCore.aiProtoParse(l)
+        if (parsed.startsWith("err:")) return
+        try {
             val type = object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
-            val m: Map<String, Any> = com.google.gson.Gson().fromJson(parsed, type) ?: return out
+            val m: Map<String, Any> = com.google.gson.Gson().fromJson(parsed, type) ?: return
             val protocol = (m["protocol"] as? String) ?: "unknown"
             val addr = "${m["address"] ?: ""}:${m["port"] ?: ""}"
-            val name = (m["tag"] as? String)?.takeIf { it.isNotBlank() } ?: "${protocol}://$addr"
-            listOf(mapOf("name" to name, "protocol" to protocol, "addr" to addr, "link" to link))
-        } catch (_: Throwable) { out }
+            var name = (m["tag"] as? String)?.takeIf { it.isNotBlank() } ?: "${protocol}://$addr"
+            // URL 解码节点名（形如 %E9%AB%98...）
+            name = try { java.net.URLDecoder.decode(name, "UTF-8") } catch (_: Exception) { name }
+            // 节点名里去掉行尾残留（base64 解码常见 \n 粘连）
+            name = name.trim().substringBefore('\n').trim()
+            out.add(mapOf("name" to name, "protocol" to protocol, "addr" to addr, "link" to l))
+        } catch (_: Throwable) {}
     }
 
     private fun saveProxyPool() {
@@ -549,12 +586,28 @@ class MainActivity : AppCompatActivity() {
                 webView.loadUrl("https://chat.deepseek.com")
                 return@setOnClickListener
             }
-            val ok = YamiCore.aiSetProvider(
-                Provider(name = "deepseek-web", protocol = "deepseek-web", cookies = cookies, model = "deepseek-chat")
-            )
-            YamiCore.aiSetActive("deepseek-web")
-            // 免费白嫖桥不强制省 token（默认关）
-            Toast.makeText(this, if (ok) "DeepSeek 白嫖已启用（零 key）" else "启用失败", Toast.LENGTH_SHORT).show()
+            // deepseek-pp 用 localStorage 里的 userToken 走 Bearer 认证；
+            // 从 WebView 同步导出，cookie 仍保留作兼容。
+            webView.evaluateJavascript(
+                "(function(){ try { return localStorage.getItem('userToken') || ''; } catch(e){ return ''; } })()"
+            ) { raw ->
+                var token = raw?.trim()?.trim('"') ?: ""
+                if (token == "null") token = ""
+                val ok = YamiCore.aiSetProvider(
+                    Provider(
+                        name = "deepseek-web", protocol = "deepseek-web",
+                        cookies = cookies, token = token, model = "deepseek-chat"
+                    )
+                )
+                YamiCore.aiSetActive("deepseek-web")
+                // 免费白嫖桥不强制省 token（默认关）
+                val mode = if (token.isBlank()) "cookie 模式" else "token 模式"
+                Toast.makeText(
+                    this,
+                    if (ok) "DeepSeek 白嫖已启用（零 key·$mode）" else "启用失败",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         findViewById<Button>(R.id.btnAnalyze).setOnClickListener {
