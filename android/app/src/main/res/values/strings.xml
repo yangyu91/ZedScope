@@ -90,6 +90,9 @@
     <string name="home_subtitle">内置抓包调试的轻量 AI 浏览器</string>
     <string name="home_bookmarks">常用入口</string>
     <string name="home_ca_hint">抓包前请先安装证书，否则 HTTPS 网站无法拦截</string>
+    <string name="ca_status_installed">✓ 证书已安装（可在设置 → 安全 → 加密与凭据 查看）</string>
+    <string name="ca_status_missing">✗ 证书未安装，点下方按钮安装</string>
+    <string name="ca_already_installed">ZedScope CA 已安装，无需重复安装</string>
     <string name="home_install_ca">安装抓包证书</string>
     <string name="toast_ca_installing">正在打开证书安装器，请命名为 ZedScope 并设为「用于 VPN 和应用」</string>
     <string name="cert_path_hint">证书已保存到：%1$s\n可在「设置 → 安全 → 安装证书」手动选择</string>

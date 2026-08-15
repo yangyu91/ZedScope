@@ -568,6 +568,19 @@
                             android:text="@string/home_ca_hint"
                             style="@style/Yami.Text.Dim" />
 
+                        <TextView
+                            android:id="@+id/tvCaStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_pill_surface"
+                            android:paddingStart="@dimen/yami_space_md"
+                            android:paddingEnd="@dimen/yami_space_md"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
+                            android:layout_marginBottom="@dimen/yami_space_md"
+                            android:text="@string/ca_status_missing"
+                            style="@style/Yami.Text.Body" />
+
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnInstallCa"
                             style="@style/Yami.Button.Tonal"

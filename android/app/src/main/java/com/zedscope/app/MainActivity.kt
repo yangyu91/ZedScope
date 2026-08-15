@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.Bundle
@@ -318,6 +319,12 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnClear).setOnLongClickListener {
             exportHAR()
             true
+        }
+        // 证书安装状态显示
+        findViewById<TextView>(R.id.tvCaStatus).apply {
+            text = if (isCaInstalled()) getString(R.string.ca_status_installed) else getString(R.string.ca_status_missing)
+            setTextColor(resources.getColor(
+                if (isCaInstalled()) R.color.yami_success else R.color.yami_warn, null))
         }
 
 
@@ -837,8 +844,11 @@ class MainActivity : AppCompatActivity() {
                 v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.panel_fade_in))
             }
         }
-        // 子页（从设置中心进入）时底部导航高亮"设置"
-        if (which in 2..6) bottomNav.selectedItemId = R.id.nav_settings
+        // 子页（从设置中心进入）时底部导航高亮"设置"：直接改选中态，
+        // 不能用 selectedItemId —— 它会触发导航监听器把刚切出的页面闪回设置页。
+        if (which in 2..6) {
+            bottomNav.menu.findItem(R.id.nav_settings).isChecked = true
+        }
         if (which == 5) loadWithSkeleton(skeletonCapture, ::refreshCapture)
         if (which == 6) loadWithSkeleton(skeletonToken, ::refreshToken)
     }
@@ -903,15 +913,40 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "引擎未启动，无法导出证书", Toast.LENGTH_LONG).show()
             return
         }
-        // 0) 先把证书写到 App 外部文件目录（用户可用 MT管理器/文件管理器访问），
-        //    并复制路径到剪贴板——即使系统安装器不弹，用户也知道证书在哪。
+        // 已安装则直接提示，别重复装
+        if (isCaInstalled()) {
+            Toast.makeText(this, R.string.ca_already_installed, Toast.LENGTH_LONG).show()
+            return
+        }
+        // 0) 导出证书：App 外部目录 + 公共 Download 目录（用户找得到），复制路径
         val certDir = File(getExternalFilesDir(null), "certs")
         certDir.mkdirs()
         val certFile = File(certDir, "ZedScope-CA.crt")
         certFile.writeText(pem)
+        var publicPath = ""
+        try {
+            val dl = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "ZedScope-CA.crt")
+            dl.parentFile?.mkdirs()
+            dl.writeText(pem)
+            publicPath = dl.absolutePath
+        } catch (_: Throwable) {}
         copyText(certFile.absolutePath, "zedscope-ca-path")
         val pemBytes = pem.toByteArray(Charsets.UTF_8)
-        // 1) 主路径：系统证书安装器（API 24+），EXTRA_CERTIFICATE 必须传 DER 二进制
+        // 1) 主路径：ACTION_VIEW 打开 .crt，系统证书安装向导（兼容性最好，
+        //    国产 ROM 对 EXTRA_CERTIFICATE 支持差，.crt 文件 + x509 mime 最通用）
+        try {
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", certFile)
+            val view = Intent(Intent.ACTION_VIEW)
+            view.setDataAndType(uri, "application/x-x509-ca-cert")
+            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(view)
+            val loc = if (publicPath.isNotBlank()) publicPath else certFile.absolutePath
+            Toast.makeText(this, "证书文件：$loc（路径已复制到剪贴板）", Toast.LENGTH_LONG).show()
+            return
+        } catch (_: Exception) {
+            // 无处理 .crt 的组件，走 EXTRA_CERTIFICATE
+        }
+        // 2) 兜底：EXTRA_CERTIFICATE（API 24+，必须 DER）
         try {
             val der = pemToDer(pemBytes)
             val intent = Intent("android.credentials.INSTALL")
@@ -921,20 +956,29 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this,
                 "证书路径已复制：\n${certFile.absolutePath}",
                 Toast.LENGTH_LONG).show()
-            return
         } catch (_: Exception) {
-            // 该 intent 不可用，走文件兜底
-        }
-        // 2) 兜底：FileProvider 打开 .crt（系统能正确解析 PEM 文件）
-        try {
-            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", certFile)
-            val view = Intent(Intent.ACTION_VIEW)
-            view.setDataAndType(uri, "application/x-x509-ca-cert")
-            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            startActivity(view)
-            Toast.makeText(this, "证书文件：${certFile.absolutePath}（路径已复制）", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
             Toast.makeText(this, "自动安装失败，证书在：${certFile.absolutePath}（路径已复制）", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** 检测 ZedScope CA 是否已装入系统用户证书库（AndroidCAStore）。 */
+    private fun isCaInstalled(): Boolean {
+        return try {
+            val ks = java.security.KeyStore.getInstance("AndroidCAStore")
+            ks.load(null, null)
+            val aliases = ks.aliases()
+            while (aliases.hasMoreElements()) {
+                val alias = aliases.nextElement()
+                if (alias.contains("zedscope", true)) return true
+                val cert = try { ks.getCertificate(alias) } catch (_: Throwable) { null }
+                if (cert is java.security.cert.X509Certificate) {
+                    val dn = cert.subjectDN.name ?: ""
+                    if (dn.contains("ZedScope", true) || dn.contains("zedscope", true)) return true
+                }
+            }
+            false
+        } catch (_: Throwable) {
+            false
         }
     }
 
@@ -1066,8 +1110,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         when {
-            currentPanel in 2..6 -> { showPanel(1); bottomNav.selectedItemId = R.id.nav_settings }
-            currentPanel != 0 -> { showPanel(0); bottomNav.selectedItemId = R.id.nav_browser }
+            currentPanel in 2..6 -> { showPanel(1); bottomNav.menu.findItem(R.id.nav_settings).isChecked = true }
+            currentPanel != 0 -> { showPanel(0); bottomNav.menu.findItem(R.id.nav_browser).isChecked = true }
             webView.canGoBack() -> webView.goBack()
             else -> super.onBackPressed()
         }
