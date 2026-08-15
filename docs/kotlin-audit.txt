@@ -1,0 +1,1193 @@
+android/app/src/main/java/com/zedscope/app/AiBridge.kt
+### android/app/src/main/java/com/zedscope/app/AiBridge.kt
+package com.zedscope.app
+
+import android.os.Handler
+import android.os.Looper
+import android.webkit.WebView
+import org.json.JSONObject
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+/**
+ * Drives the in-app WebView from AI browser commands — WITHOUT any Android
+ * permission. The AI's instructions are executed inside the page's own context
+ * via evaluateJavascript (equivalent to typing JS in the dev console), so no
+ * system capability is touched. A background thread polls YamiCore for pending
+ * commands and posts the actual JS evaluation to the main thread.
+ */
+class AiBridge(private val webView: WebView) {
+    private val handler = Handler(Looper.getMainLooper())
+    private var running = false
+
+    fun start() {
+        if (running) return
+        running = true
+        Thread { loop() }.start()
+    }
+
+    fun stop() { running = false }
+
+    private fun loop() {
+        while (running) {
+            try {
+                val pending = YamiCore.aibrowserPending()
+                if (pending.isNotBlank()) {
+                    execute(JSONObject(pending))
+                }
+            } catch (_: Throwable) {
+            }
+            Thread.sleep(400)
+        }
+    }
+
+    private fun execute(cmd: JSONObject) {
+        val id = cmd.optString("id")
+        val action = cmd.optString("action")
+        val res = when (action) {
+            "navigate" -> {
+                val url = cmd.optString("url")
+                handler.post { webView.loadUrl(url) }
+                Thread.sleep(1500) // allow navigation to settle
+                "navigated to $url"
+            }
+            "click" -> jsEval(
+                "(function(){var e=document.querySelector(${q(cmd.optString("selector"))});" +
+                "if(e){e.click();return 'clicked';}return 'element not found';})()"
+            )
+            "type" -> jsEval(
+                "(function(){var e=document.querySelector(${q(cmd.optString("selector"))});" +
+                "if(e){e.value=${q(cmd.optString("text"))};" +
+                "e.dispatchEvent(new Event('input',{bubbles:true}));return 'typed';}" +
+                "return 'element not found';})()"
+            )
+            "extract" -> jsEval("document.body?document.body.innerText:''")
+            else -> "unknown action: $action"
+        }
+        YamiCore.aibrowserComplete(id, res)
+    }
+
+    // Evaluate JS on the main thread and wait for the string result.
+    private fun jsEval(js: String): String {
+        val latch = CountDownLatch(1)
+        val out = arrayOf("")
+        handler.post {
+            webView.evaluateJavascript(js) { v ->
+                out[0] = v ?: ""
+                latch.countDown()
+            }
+        }
+        try { latch.await(8, TimeUnit.SECONDS) } catch (_: Throwable) {}
+        return out[0]
+            .replace("\\n", "\n")
+            .replace("\\\"", "\"")
+            .replace("\\u003C", "<")
+            .trim('"')
+    }
+
+    // JSON-encode a string as a JS string literal (valid inside querySelector("...")).
+    private fun q(s: String): String = JSONObject.quote(s)
+}
+android/app/src/main/java/com/zedscope/app/CaptureAdapter.kt
+### android/app/src/main/java/com/zedscope/app/CaptureAdapter.kt
+package com.zedscope.app
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
+
+/** Card-style adapter for captured requests. Self-contained: binds a List<Record>
+ *  and copies the full request detail to the clipboard on tap. */
+class CaptureAdapter : RecyclerView.Adapter<CaptureAdapter.VH>() {
+    private var items: List<Record> = emptyList()
+    fun setItems(list: List<Record>) { items = list; notifyDataSetChanged() }
+
+    class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val tvMethod: TextView = view.findViewById(R.id.tvMethod)
+        val tvStatus: TextView = view.findViewById(R.id.tvStatus)
+        val tvScheme: TextView = view.findViewById(R.id.tvScheme)
+        val tvUrl: TextView = view.findViewById(R.id.tvUrl)
+        val tvMeta: TextView = view.findViewById(R.id.tvMeta)
+        val dotLogin: View = view.findViewById(R.id.dotLogin)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_capture, parent, false)
+        return VH(v)
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val r = items[position]
+        holder.tvMethod.text = r.method
+        holder.tvStatus.text = r.status_code.toString()
+        holder.tvScheme.text = if (r.is_https) "HTTPS" else "HTTP"
+        holder.tvUrl.text = r.url
+        holder.tvMeta.text = "${r.host} · token ${r.tokens.size}"
+        holder.dotLogin.visibility = if (r.is_login) View.VISIBLE else View.GONE
+        holder.itemView.setOnClickListener {
+            val detail = buildString {
+                append("${r.method} ${r.url}\n")
+                append("status: ${r.status_code}\n")
+                append("tokens: ${r.tokens.size}\n")
+                r.tokens.forEach { append("  ${it.key} = ${it.value}\n") }
+            }
+            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+            cm.setPrimaryClip(ClipData.newPlainText("ZedScope request", detail))
+            Toast.makeText(holder.itemView.context, "已复制请求详情", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun getItemCount() = items.size
+}
+android/app/src/main/java/com/zedscope/app/ChatAdapter.kt
+### android/app/src/main/java/com/zedscope/app/ChatAdapter.kt
+package com.zedscope.app
+
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
+
+/** 一条对话气泡。role: "user" 右对齐绿底，"ai" 左对齐中性底。 */
+data class ChatMsg(val role: String, val text: String)
+
+/**
+ * 对话气泡列表适配器。复用 item_chat.xml（其默认是 AI 左对齐气泡），
+ * 在 onBindViewHolder 里按 role 切换对齐方向、背景与文字色，
+ * 因此同一个布局文件即可表达 user / ai 两种气泡，无需为 user 另建一份。
+ */
+class ChatAdapter : RecyclerView.Adapter<ChatAdapter.VH>() {
+    private val items = mutableListOf<ChatMsg>()
+
+    fun add(msg: ChatMsg) {
+        items.add(msg)
+        notifyItemInserted(items.size - 1)
+    }
+
+    /** 流式打字机：把最后一条气泡的文本替换为前缀（由调用方逐帧推进）。 */
+    fun updateLast(text: String) {
+        if (items.isEmpty()) return
+        val i = items.size - 1
+        items[i] = items[i].copy(text = text)
+        notifyItemChanged(i)
+    }
+
+    fun clear() {
+        items.clear()
+        notifyDataSetChanged()
+    }
+
+    fun isEmpty() = items.isEmpty()
+
+    class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val tvRole: TextView = view.findViewById(R.id.tvRole)
+        val tvBubble: TextView = view.findViewById(R.id.tvBubble)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_chat, parent, false)
+        return VH(v)
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val m = items[position]
+        val ctx = holder.itemView.context
+        val root = holder.itemView as LinearLayout
+        if (m.role == "user") {
+            root.gravity = Gravity.END
+            holder.tvRole.text = "你"
+            holder.tvBubble.setBackgroundResource(R.drawable.bg_bubble_user)
+            holder.tvBubble.setTextColor(ContextCompat.getColor(ctx, R.color.yami_on_accent))
+        } else {
+            root.gravity = Gravity.START
+            holder.tvRole.text = "AI"
+            holder.tvBubble.setBackgroundResource(R.drawable.bg_bubble_ai)
+            holder.tvBubble.setTextColor(ContextCompat.getColor(ctx, R.color.yami_on_surface))
+        }
+        holder.tvBubble.text = m.text
+    }
+
+    override fun getItemCount() = items.size
+}
+android/app/src/main/java/com/zedscope/app/MainActivity.kt
+### android/app/src/main/java/com/zedscope/app/MainActivity.kt
+package com.zedscope.app
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.net.VpnService
+import android.os.Build
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.os.Bundle
+import android.provider.Settings
+import android.view.LayoutInflater
+import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.webkit.CookieManager
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import com.google.android.material.button.MaterialButtonToggleGroup
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.materialswitch.MaterialSwitch
+import androidx.core.content.FileProvider
+import androidx.webkit.ProxyConfig
+import androidx.webkit.ProxyController
+import java.io.File
+import android.util.Log
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var webView: WebView
+    private lateinit var etUrl: EditText
+    private lateinit var etInput: EditText   // AI 输入：setupAiPanel 赋值，runAgentTask 等成员函数也用
+    private lateinit var tvSession: TextView   // 会话 ID 展示：setupAiPanel 赋值，runAgentTask 也用
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var flBrowser: android.widget.FrameLayout
+    private lateinit var flCapture: android.widget.FrameLayout
+    private lateinit var flToken: android.widget.FrameLayout
+    private lateinit var flSettings: android.widget.FrameLayout
+    private lateinit var flAi: android.widget.FrameLayout
+    private lateinit var flSsh: android.widget.FrameLayout
+    private lateinit var flProxy: android.widget.FrameLayout
+    private lateinit var skeletonCapture: android.widget.FrameLayout
+    private lateinit var skeletonToken: android.widget.FrameLayout
+    private lateinit var aiBridge: AiBridge
+    private lateinit var swipeCapture: SwipeRefreshLayout
+    private lateinit var rvCapture: RecyclerView
+    private lateinit var rvToken: RecyclerView
+    private lateinit var btnCopyAll: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var btnCopyTokens: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var progress: ProgressBar
+    private lateinit var statRequests: TextView
+    private lateinit var statTokens: TextView
+    private lateinit var statLogins: TextView
+    private lateinit var emptyCapture: TextView
+    private lateinit var emptyToken: TextView
+    private lateinit var switchClean: MaterialSwitch
+    private lateinit var switchVpn: MaterialSwitch
+    private lateinit var tvVpnStatus: TextView
+    private lateinit var themeToggle: com.google.android.material.button.MaterialButtonToggleGroup
+
+    private val captureAdapter = CaptureAdapter()
+    private val tokenAdapter = TokenAdapter()
+    private var currentPanel = 0
+    private var currentSessionId = ""   // 当前 AI 会话（省token）
+
+    // 对话式 AI 面板
+    private lateinit var chatAdapter: ChatAdapter
+    private lateinit var rvChat: RecyclerView
+    private lateinit var tvChatEmpty: TextView
+    private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
+    private lateinit var typingDots: com.zedscope.app.ui.TypingDots
+    private val chatHandler = Handler(Looper.getMainLooper())
+
+    // SSH 独立窗口
+    private lateinit var sshAdapter: ChatAdapter
+    private lateinit var rvSshOut: RecyclerView
+    private lateinit var tvSshEmpty: TextView
+    private lateinit var etSshCmd: EditText
+
+    // ---- 多窗口（浏览器多开 / AI / SSH）----
+    private val browserWebViews = mutableListOf<WebView>()   // 每个浏览器窗口一个 WebView
+    private var activeBrowserIndex = 0
+    private lateinit var flBrowserContainer: android.widget.FrameLayout  // WebView 容器
+    private lateinit var topBar: android.view.View                       // 顶栏（沉浸式）
+    private var uiHidden = false                                          // 沉浸式状态
+
+    // v2 DEMO: VPN permission launcher for global (all-app) capture.
+    private val vpnPermission = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) startVpn() else {
+            switchVpn.isChecked = false
+            Toast.makeText(this, R.string.vpn_permission_required, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        applySavedNightMode()           // restore day / night before the theme is applied
+        setTheme(R.style.Theme_Yami)   // swap splash theme back to the app theme
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        boot("setContentView")
+
+        maybeShowLastCrash()
+
+        webView = findViewById(R.id.webview)
+        etUrl = findViewById(R.id.etUrl)
+        bottomNav = findViewById(R.id.bottomNav)
+        flBrowser = findViewById(R.id.flBrowser)
+        flCapture = findViewById(R.id.flCapture)
+        flToken = findViewById(R.id.flToken)
+        flSettings = findViewById(R.id.flSettings)
+        flAi = findViewById(R.id.flAi)
+        flSsh = findViewById(R.id.flSsh)
+        flProxy = findViewById(R.id.flProxy)
+        skeletonCapture = findViewById(R.id.skeletonCapture)
+        skeletonToken = findViewById(R.id.skeletonToken)
+        swipeCapture = findViewById(R.id.swipeCapture)
+        rvCapture = findViewById(R.id.rvCapture)
+        rvToken = findViewById(R.id.rvToken)
+        btnCopyAll = findViewById(R.id.btnCopyAll)
+        btnCopyTokens = findViewById(R.id.btnCopyTokens)
+        progress = findViewById(R.id.progress)
+        statRequests = findViewById(R.id.statRequests)
+        statTokens = findViewById(R.id.statTokens)
+        statLogins = findViewById(R.id.statLogins)
+        emptyCapture = findViewById(R.id.emptyCapture)
+        emptyToken = findViewById(R.id.emptyToken)
+        switchClean = findViewById(R.id.switchClean)
+        switchVpn = findViewById(R.id.switchVpn)
+        tvVpnStatus = findViewById(R.id.tvVpnStatus)
+        themeToggle = findViewById(R.id.themeToggle)
+
+        // 多窗口：把布局里的 webview 作为第一个浏览器窗口；容器用于后续多开
+        flBrowserContainer = findViewById(R.id.flWebContainer)
+        browserWebViews.add(webView)
+        findViewById<android.view.View>(R.id.btnWindows).setOnClickListener { showWindowMenu() }
+        topBar = findViewById(R.id.topBar)
+        setupImmersive()
+
+        // 设置中心 → 功能入口
+        findViewById<android.view.View>(R.id.rowAi).setOnClickListener { showPanel(2) }
+        findViewById<android.view.View>(R.id.rowSsh).setOnClickListener { showPanel(3) }
+        findViewById<android.view.View>(R.id.rowProxy).setOnClickListener { showPanel(4) }
+        findViewById<android.view.View>(R.id.rowCapture).setOnClickListener { showPanel(5) }
+        findViewById<android.view.View>(R.id.rowToken).setOnClickListener { showPanel(6) }
+        findViewById<android.view.View>(R.id.btnCaptureBack).setOnClickListener { showPanel(1) }
+        findViewById<android.view.View>(R.id.btnTokenBack).setOnClickListener { showPanel(1) }
+
+        setupWebView()
+        setupPanels()
+        setupSettings()
+        setupThemeToggle()
+
+        val startRes = YamiCore.start()
+        boot("YamiCore.start=$startRes")
+        if (startRes == "ok") {
+            YamiCore.setBodyDir(cacheDir.absolutePath + "/yami-bodies")
+            YamiCore.setCleanCapture(true) // clean capture ON by default
+            applyWebViewProxy()
+            Toast.makeText(this, R.string.toast_proxy_started, Toast.LENGTH_SHORT).show()
+        } else {
+            // 引擎启动失败（端口占用/Go 侧错误等）：直接暴露原因，而不是静默继续，
+            // 方便用户反馈。注意 Go panic 走 SIGABRT 时 Kotlin 抓不到，会表现为闪退，
+            // 那种情况需要 adb logcat 才能定位（见仓库 README 排错表）。
+            Toast.makeText(this, "引擎启动失败：$startRes", Toast.LENGTH_LONG).show()
+        }
+
+        if (YamiCore.aiStart()) {
+            aiBridge = AiBridge(webView)
+            aiBridge.start()
+            boot("aiStart=ok")
+        } else {
+            boot("aiStart=failed")
+        }
+
+        setupAiPanel()
+        setupSshPanel()
+        loadHome()
+        boot("UI ready")
+    }
+
+    /**
+     * 若上次运行留下崩溃日志(cacheDir/crash.log，由 YamiApplication 的全局
+     * 未捕获异常处理器写入)，提示用户反馈。注意 native 崩溃(Go panic->SIGABRT)
+     * Kotlin 层抓不到，此提示主要针对 Kotlin 层异常。
+     */
+    private fun maybeShowLastCrash() {
+        try {
+            val f = File(cacheDir, "crash.log")
+            if (f.exists() && f.length() > 0) {
+                Toast.makeText(this, "检测到上次 Kotlin 崩溃日志(crash.log)，请反馈以便定位", Toast.LENGTH_LONG).show()
+                return
+            }
+            // 没有 Kotlin 崩溃日志，但启动轨迹若未到达"UI ready"，说明上次在更早阶段
+            // 就 native 崩了（Go panic->SIGABRT，Kotlin 抓不到）。把最后到达的阶段回显，
+            // 用户无需 adb 即可把这段信息反馈过来定位。
+            val boot = File(cacheDir, "boot.log")
+            if (boot.exists() && boot.length() > 0) {
+                val last = boot.readLines().filter { it.isNotBlank() }.lastOrNull() ?: ""
+                if (!last.contains("UI ready")) {
+                    Toast.makeText(this, "上次启动止于：$last（native 崩溃？请反馈此信息）", Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (_: Throwable) {
+        }
+    }
+android/app/src/main/java/com/zedscope/app/TokenAdapter.kt
+### android/app/src/main/java/com/zedscope/app/TokenAdapter.kt
+package com.zedscope.app
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
+
+/** Card-style adapter for extracted tokens. Self-contained: binds a List<Token>
+ *  and copies the token value to the clipboard on tap. */
+class TokenAdapter : RecyclerView.Adapter<TokenAdapter.VH>() {
+    private var items: List<Token> = emptyList()
+    fun setItems(list: List<Token>) { items = list; notifyDataSetChanged() }
+
+    class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val tvKey: TextView = view.findViewById(R.id.tvKey)
+        val tvSource: TextView = view.findViewById(R.id.tvSource)
+        val tvValue: TextView = view.findViewById(R.id.tvValue)
+        val tvLoginFlag: TextView = view.findViewById(R.id.tvLoginFlag)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_token, parent, false)
+        return VH(v)
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val t = items[position]
+        holder.tvKey.text = t.key
+        holder.tvSource.text = t.source
+        holder.tvValue.text = t.value
+        holder.tvLoginFlag.visibility = if (t.is_login) View.VISIBLE else View.GONE
+        holder.itemView.setOnClickListener {
+            val cm = holder.itemView.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as ClipboardManager
+            cm.setPrimaryClip(ClipData.newPlainText(t.key, t.value))
+            Toast.makeText(holder.itemView.context, "已复制 ${t.key}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun getItemCount() = items.size
+}
+android/app/src/main/java/com/zedscope/app/VpnCaptureService.kt
+### android/app/src/main/java/com/zedscope/app/VpnCaptureService.kt
+package com.zedscope.app
+
+import android.content.Intent
+import android.net.VpnService
+import android.os.Build
+import android.os.ParcelFileDescriptor
+
+/**
+ * v2 DEMO — global (all-app) capture via VpnService.
+ *
+ * Establishes a TUN, excludes yami-UA itself from the VPN (so the local MITM
+ * proxy's egress never loops back), and hands the TUN fd to [VpnForwarder],
+ * which relays every app's TCP through the local proxy and proxies DNS.
+ *
+ * The WebView-only capture path remains the supported default; this service is
+ * an opt-in demonstration of whole-device capture. Validate on-device.
+ */
+class VpnCaptureService : VpnService() {
+
+    private var forwarder: VpnForwarder? = null
+    private var thread: Thread? = null
+    private var pfd: ParcelFileDescriptor? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val proxy = intent?.getStringExtra("proxy") ?: "127.0.0.1:8899"
+        val host = proxy.substringBefore(":").ifBlank { "127.0.0.1" }
+        val port = proxy.substringAfter(":").toIntOrNull() ?: 8899
+
+        val builder = Builder()
+            .setSession("ZedScope 全局抓包")
+            .addAddress("10.0.0.2", 24)
+            .addRoute("0.0.0.0", 0)
+            .addDnsServer("10.0.0.1")
+            .setMtu(1500)
+            .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) allowFamily(android.system.OsConstants.AF_INET) }
+        try {
+            // exclude our own app so the proxy/AI egress doesn't loop
+            builder.addDisallowedApplication(packageName)
+        } catch (_: Exception) {
+        }
+
+        val established = builder.establish()
+        if (established == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        pfd = established
+        forwarder = VpnForwarder(established.fileDescriptor, host, port, this)
+        thread = Thread(forwarder, "yami-vpn").also { it.start() }
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        forwarder?.stop()
+        thread?.interrupt()
+        try {
+            pfd?.close()
+        } catch (_: Exception) {
+        }
+        super.onDestroy()
+    }
+}
+android/app/src/main/java/com/zedscope/app/VpnForwarder.kt
+### android/app/src/main/java/com/zedscope/app/VpnForwarder.kt
+package com.zedscope.app
+
+import android.net.VpnService
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.Inet4Address
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+
+/**
+ * v2 DEMO — global (all-app) capture via VpnService.
+ *
+ * This is a lightweight TUN -> local-proxy forwarder. It is intentionally a
+ * demonstration of the "capture every app, not just the WebView" path; the
+ * WebView-only path remains the supported default. Architecture:
+ *
+ *   app TCP/UDP --> TUN (fd) --> VpnForwarder
+ *                                      |
+ *      DNS query  --> forward to real resolver, learn name<->ip
+ *      TCP stream --> CONNECT <host:port> to local yami MITM proxy (127.0.0.1:8899)
+ *                     then NAT-splice the bytes both ways (forged IP/TCP)
+ *
+ * yami-UA itself is excluded from the VPN (addDisallowedApplication), so the
+ * proxy's own egress never loops back through the TUN.
+ *
+ * NOTE: unverified on a device in the build sandbox; validate on-device.
+ */
+class VpnForwarder(
+    private val fd: java.io.FileDescriptor,
+    private val proxyHost: String,
+    private val proxyPort: Int,
+    private val service: VpnService
+) : Runnable {
+
+    private val `in` = FileInputStream(fd)
+    private val out = FileOutputStream(fd)
+    private val mtu = 1500
+    private val executor = Executors.newCachedThreadPool()
+
+    // name -> ip  and  ip -> name  learned from DNS answers
+    private val nameToIp = ConcurrentHashMap<String, Int>()
+    private val ipToName = ConcurrentHashMap<Int, String>()
+
+    // active TCP connections keyed by (srcIp,srcPort,dstIp,dstPort)
+    private val conns = ConcurrentHashMap<ConnKey, Connection>()
+    private var stopped = false
+
+    // virtual DNS server we advertised in the VPN builder
+    private val dnsServerIp = ipToInt("10.0.0.1")
+
+    override fun run() {
+        val buf = ByteArray(mtu)
+        while (!stopped) {
+            val n = try {
+                `in`.read(buf)
+            } catch (_: Exception) {
+                break
+            }
+            if (n <= 0) break
+            try {
+                handlePacket(buf, n)
+            } catch (_: Exception) {
+                // drop malformed packet, keep the tunnel alive
+            }
+        }
+    }
+
+    fun stop() {
+        stopped = true
+        conns.values.forEach { it.close() }
+        conns.clear()
+    }
+
+    // ---------------- packet dispatch ----------------
+
+    private fun handlePacket(pkt: ByteArray, len: Int) {
+        if (len < 20) return
+        val verIhl = pkt[0].toInt() and 0xff
+        val version = verIhl shr 4
+        if (version != 4) return
+        val ihl = (verIhl and 0x0f) * 4
+        if (len < ihl + 1) return
+        val proto = pkt[9].toInt() and 0xff
+        val srcIp = readInt(pkt, 12)
+        val dstIp = readInt(pkt, 16)
+        when (proto) {
+            6 -> handleTcp(pkt, ihl, len, srcIp, dstIp)
+            17 -> handleUdp(pkt, ihl, len, srcIp, dstIp)
+        }
+    }
+
+    // ---------------- TCP ----------------
+
+    private fun handleTcp(pkt: ByteArray, ihl: Int, len: Int, srcIp: Int, dstIp: Int) {
+        val off = ihl
+        if (len < off + 20) return
+        val srcPort = (pkt[off].toInt() and 0xff shl 8) or (pkt[off + 1].toInt() and 0xff)
+        val dstPort = (pkt[off + 2].toInt() and 0xff shl 8) or (pkt[off + 3].toInt() and 0xff)
+        val seq = readInt(pkt, off + 4).toLong() and 0xffffffffL
+        val ack = readInt(pkt, off + 8).toLong() and 0xffffffffL
+        val dataOff = (pkt[off + 12].toInt() and 0xf0) shr 4
+        val flags = pkt[off + 13].toInt() and 0xff
+        val syn = (flags and 0x02) != 0
+        val ackF = (flags and 0x10) != 0
+        val fin = (flags and 0x01) != 0
+        val payloadLen = len - off - dataOff * 4
+        val payload = if (payloadLen > 0) pkt.copyOfRange(off + dataOff * 4, len) else ByteArray(0)
+
+        val key = ConnKey(srcIp, srcPort, dstIp, dstPort)
+        var conn = conns[key]
+
+        if (syn && conn == null) {
+            conn = openConnection(key, dstIp, dstPort, seq)
+            if (conn == null) return
+            conns[key] = conn
+            // SYN-ACK: seq = our ISN (serverSeq - 1), ack = client seq + 1
+            sendTcp(conn, (conn.serverSeq - 1) and 0xffffffffL, seq + 1, syn = true, ackF = true, payload = ByteArray(0))
+            return
+        }
+        if (conn == null) return
+
+        conn.clientSeq = seq + payload.size
+        if (fin) {
+            conn.clientSeq += 1
+            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, fin = true, payload = ByteArray(0))
+            conn.close()
+            conns.remove(key)
+            return
+        }
+        if (payload.isNotEmpty()) {
+            conn.queue.add(payload)
+            // ACK the data we just received
+            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, payload = ByteArray(0))
+            pumpToProxy(conn)
+        } else if (ackF) {
+            // pure ACK
+        }
+    }
+
+    private fun openConnection(key: ConnKey, dstIp: Int, dstPort: Int, clientSeq: Long): Connection? {
+        val host = ipToName[dstIp] ?: intToIp(dstIp)
+        return try {
+            val sock = Socket()
+            sock.connect(InetSocketAddress(proxyHost, proxyPort), 8000)
+            val os = sock.getOutputStream()
+            val req = "CONNECT $host:$dstPort HTTP/1.1\r\nHost: $host:$dstPort\r\n\r\n"
+            os.write(req.toByteArray())
+            val ins = sock.getInputStream()
+            val hdr = ByteArray(256)
+            var total = 0
+            while (total < hdr.size) {
+                val r = ins.read(hdr, total, hdr.size - total)
+                if (r < 0) break
+                total += r
+                if (hdr.copyOfRange(0, total).toString(Charsets.US_ASCII).contains("\r\n\r\n")) break
+            }
+            if (!hdr.copyOfRange(0, total).toString(Charsets.US_ASCII).contains(" 200")) {
+                sock.close()
+                return null
+            }
+            val isn = (System.nanoTime() and 0x7fffffff).toInt().toLong() and 0xffffffffL
+            // serverSeq is the NEXT sequence number to send; the SYN itself
+            // consumes one number, so the first data/ACK uses isn+1.
+            val conn = Connection(key, sock, os, clientSeq + 1, (isn + 1) and 0xffffffffL)
+            // proxy -> app direction
+            executor.execute {
+                try {
+                    val bin = sock.getInputStream()
+                    val buf = ByteArray(8192)
+                    while (!conn.closed) {
+                        val r = bin.read(buf)
+                        if (r <= 0) break
+                        var off = 0
+                        while (off < r) {
+                            val seg = kotlin.math.min(1460, r - off)
+                            sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true,
+                                payload = buf.copyOfRange(off, off + seg))
+                            conn.serverSeq = (conn.serverSeq + seg) and 0xffffffffL
+                            off += seg
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+                // proxy closed -> FIN to app
+                try {
+                    sendTcp(conn, conn.serverSeq, conn.clientSeq, syn = false, ackF = true, fin = true, payload = ByteArray(0))
+                } catch (_: Exception) {
+                }
+            }
+            conn
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun pumpToProxy(conn: Connection) {
+        while (conn.queue.isNotEmpty()) {
+            val p = conn.queue.poll() ?: break
+            try {
+                conn.out.write(p)
+                conn.out.flush()
+            } catch (_: Exception) {
+                conn.close()
+                conns.remove(conn.key)
+                return
+            }
+        }
+    }
+
+    // ---------------- UDP / DNS ----------------
+
+    private fun handleUdp(pkt: ByteArray, ihl: Int, len: Int, srcIp: Int, dstIp: Int) {
+        val off = ihl
+        if (len < off + 8) return
+        val srcPort = (pkt[off].toInt() and 0xff shl 8) or (pkt[off + 1].toInt() and 0xff)
+android/app/src/main/java/com/zedscope/app/YamiApplication.kt
+### android/app/src/main/java/com/zedscope/app/YamiApplication.kt
+package com.zedscope.app
+
+import android.app.Application
+import android.util.Log
+import java.io.File
+
+/**
+ * ZedScope Application 入口。
+ *
+ * 职责（仅保留诊断能力，不再手动初始化 Go runtime）：
+ *   - 安装全局未捕获异常处理器：Kotlin 层崩溃写入 cacheDir/crash.log。
+ *   - 把启动阶段写入 cacheDir/boot.log，闪退前最后一行即死因线索，
+ *     下一 launch 由 MainActivity 回显，无需 adb 即可定位。
+ *
+ * 为什么不再反射调用 Yami.init(Context)：
+ *   实测（Android 14）在 Application.onCreate 早期反射调用 gomobile 的
+ *   Yami.init 会触发 native 初始化路径差异，导致"打开即闪退"(SIGSEGV/SIGABRT)，
+ *   Kotlin try/catch 拦不住。gomobile 的 Go runtime 本身会在首次调用任意
+ *   Yami.* 原生方法时自动懒初始化（v0.2 即此路径，可用），因此这里不主动调。
+ */
+class YamiApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        boot("Application.onCreate start")
+        installCrashHandler()
+        boot("Application.onCreate done")
+    }
+
+    /** 把启动阶段追加写入 cacheDir/boot.log（每次打开即落盘，闪退前最后一行即死因线索）。 */
+    private fun boot(stage: String) {
+        try {
+            File(cacheDir, "boot.log").appendText("${System.currentTimeMillis()} $stage\n")
+        } catch (_: Throwable) {
+            // best-effort
+        }
+    }
+
+    /**
+     * 全局未捕获异常处理：把 Kotlin 层堆栈写入 cacheDir/crash.log，并在 boot.log 留痕。
+     * 注意 native 崩溃（Go panic -> SIGABRT）Kotlin 层抓不到，但 Kotlin 异常能落盘，
+     * 便于不带电脑也能回传真实崩溃原因。
+     */
+    private fun installCrashHandler() {
+        val def = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            try {
+                File(cacheDir, "boot.log").appendText("${System.currentTimeMillis()} CRASH thread=${t.name}\n")
+                File(cacheDir, "crash.log").appendText("${System.currentTimeMillis()} thread=${t.name}\n${Log.getStackTraceString(e)}\n----\n")
+            } catch (_: Throwable) {
+                // best-effort
+            }
+            def?.uncaughtException(t, e)
+        }
+    }
+}
+android/app/src/main/java/com/zedscope/app/YamiCore.kt
+### android/app/src/main/java/com/zedscope/app/YamiCore.kt
+package com.zedscope.app
+
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import yami.Yami
+
+/**
+ * Thin Kotlin wrapper around the gomobile-generated `yami.Yami` binding.
+ * All heavy lifting (MITM, capture, token extraction, modify) happens in Go.
+ */
+data class Token(
+    val key: String = "",
+    val value: String = "",
+    val source: String = "",
+    val url: String = "",
+    val is_login: Boolean = false,
+    val captured_at: Long = 0
+)
+
+data class Record(
+    val id: Long = 0,
+    val method: String = "",
+    val url: String = "",
+    val host: String = "",
+    val status_code: Int = 0,
+    val is_https: Boolean = false,
+    val is_login: Boolean = false,
+    val time: String = "",
+    val tokens: List<Token> = emptyList()
+)
+
+data class Provider(
+    val name: String = "",
+    val base_url: String = "",
+    val api_key: String = "",
+    val model: String = "",
+    val protocol: String = "openai",
+    val upstream_proxy: String = "",
+    val cookies: String = "",
+    val token: String = "",      // deepseek-web: Bearer userToken (localStorage), like deepseek-pp
+    val healthy: Boolean = true
+)
+
+object YamiCore {
+    private val gson = Gson()
+
+    private const val PROXY_ADDR = "127.0.0.1:8899"
+    private const val API_ADDR = "127.0.0.1:8900"
+    private const val AI_ADDR = "127.0.0.1:8910"
+
+    fun proxyAddr() = PROXY_ADDR
+    fun apiAddr() = API_ADDR
+    fun aiAddr() = AI_ADDR
+
+    /** 启动代理+API。返回 "ok" 或 "err: ..."（含 Go 侧错误），便于 UI 直接展示。 */
+    fun start(): String {
+        return try {
+            Yami.start(PROXY_ADDR, API_ADDR)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            "err: ${e.message}"
+        }
+    }
+
+    fun caPEM(): String = try { Yami.caPEM() } catch (e: Throwable) { "" }
+
+    fun captures(): List<Record> {
+        return try {
+            val type = object : TypeToken<List<Record>>() {}.type
+            gson.fromJson<List<Record>>(Yami.captures(), type) ?: emptyList()
+        } catch (e: Throwable) {
+            emptyList()
+        }
+    }
+
+    fun tokens(): List<Token> {
+        return try {
+            val type = object : TypeToken<List<Token>>() {}.type
+            gson.fromJson<List<Token>>(Yami.tokens(), type) ?: emptyList()
+        } catch (e: Throwable) {
+            emptyList()
+        }
+    }
+
+    fun clear() {
+        try { Yami.clear() } catch (_: Throwable) {}
+    }
+
+    // Override where large captured bodies are spilled to disk. Required by
+    // MainActivity.onCreate; if missing the Kotlin build fails
+    // (Unresolved reference: setBodyDir) and no APK is produced.
+    fun setBodyDir(dir: String): Boolean = try { Yami.setBodyDir(dir) == "ok" } catch (e: Throwable) { false }
+
+    // Toggle the default clean-capture filter (hides yami's own / AI / relay traffic).
+    fun setCleanCapture(on: Boolean): Boolean = try {
+        Yami.setCleanCapture(on) == "ok"
+    } catch (e: Throwable) { false }
+
+    // ---------------- AI relay / agent ----------------
+
+    fun aiStart(): Boolean = try { Yami.aiStart(AI_ADDR) == "ok" } catch (e: Throwable) { false }
+
+    fun aiSetProvider(p: Provider): Boolean = try {
+        val json = gson.toJson(mapOf(
+            "name" to p.name, "base_url" to p.base_url, "api_key" to p.api_key,
+            "model" to p.model, "protocol" to p.protocol,
+            "upstream_proxy" to p.upstream_proxy, "cookies" to p.cookies,
+            "token" to p.token
+        ))
+        Yami.aiSetProvider(json) == "ok"
+    } catch (e: Throwable) { false }
+
+    fun aiSetActive(name: String): Boolean = try { Yami.aiSetActive(name) == "ok" } catch (_: Throwable) { false }
+
+    fun aiListProviders(): List<Provider> = try {
+        val type = object : TypeToken<List<Provider>>() {}.type
+        gson.fromJson<List<Provider>>(Yami.aiListProviders(), type) ?: emptyList()
+    } catch (e: Throwable) { emptyList() }
+
+    fun aiChat(prompt: String): String = try { Yami.aiChat(prompt) } catch (e: Throwable) { "err: ${e.message}" }
+
+    // 省token 模式（抄 Reasonix compact_ratio）
+    fun aiSetCompact(on: Boolean): Boolean = try { Yami.aiSetCompact(on) == "ok" } catch (e: Throwable) { false }
+    fun aiSetCompactRatio(r: Double): Boolean = try { Yami.aiSetCompactRatio(r) == "ok" } catch (e: Throwable) { false }
+
+    // 会话管理
+    fun aiSessionNew(): String = try { Yami.aiSessionNew() } catch (e: Throwable) { "" }
+    fun aiSessionList(): List<String> = try {
+        val type = object : TypeToken<List<String>>() {}.type
+        gson.fromJson<List<String>>(Yami.aiSessionList(), type) ?: emptyList()
+    } catch (e: Throwable) { emptyList() }
+    fun aiSessionClear(id: String): Int = try { Yami.aiSessionClear(id).toIntOrNull() ?: 0 } catch (e: Throwable) { 0 }
+
+    // 有会话的聊天（带 X-Yami-Session 走压缩层）
+    fun aiChatSession(sessionId: String, prompt: String): String =
+        try { Yami.aiChatSession(sessionId, prompt) } catch (e: Throwable) { "err: ${e.message}" }
+
+    fun aiAnalyze(captureId: String, prompt: String): String = try {
+        Yami.aiAnalyze(captureId, prompt)
+    } catch (e: Throwable) { "err: ${e.message}" }
+
+    fun aiAgentRun(task: String): String = try { Yami.aiAgentRun(task) } catch (e: Throwable) { "err: ${e.message}" }
+
+    // Agent 跑在会话里（省token）
+    fun aiAgentRunSession(sessionId: String, task: String): String =
+        try { Yami.aiAgentRunSession(sessionId, task) } catch (e: Throwable) { "err: ${e.message}" }
+
+    // ---------------- 抓包增强（ProxyPin 差距补全） ----------------
+
+    /** 安装抓包增强规则（域名过滤 / 拦截 / 映射 / AES 解密），入参 RulesConfig JSON。 */
+    fun aiSetRules(json: String): Boolean = try { Yami.aiSetRules(json) == "ok" } catch (e: Throwable) { false }
+    /** 读取当前抓包增强规则（RulesConfig JSON）。 */
+    fun aiGetRules(): String = try { Yami.aiGetRules() } catch (e: Throwable) { "{}" }
+    /** 导出全部抓包为 HAR JSON 文档。 */
+    fun aiExportHAR(): String = try { Yami.aiExportHAR() } catch (e: Throwable) { "err: ${e.message}" }
+    /** 按 keyword/status/content_type 搜索抓包，返回 Record JSON 数组。 */
+    fun aiSearchCaptures(json: String): String = try { Yami.aiSearchCaptures(json) } catch (e: Throwable) { "[]" }
+
+    // ---------------- 协议 / 会话 / Agent 增强 ----------------
+
+    /** Provider 健康 + active 状态（JSON 数组：{name,healthy,active}）。 */
+    fun aiProviderHealth(): String = try { Yami.aiProviderHealth() } catch (e: Throwable) { "[]" }
+    /** 导出某个会话为 JSON（供备份 / 跨端迁移）。 */
+    fun aiSessionExport(id: String): String = try { Yami.aiSessionExport(id) } catch (e: Throwable) { "" }
+    /** 导入会话 JSON（AiSessionExport 的逆向）。 */
+    fun aiSessionImport(id: String, json: String): Boolean = try { Yami.aiSessionImport(id, json) == "ok" } catch (e: Throwable) { false }
+    /** 解析 vmess/vless/trojan/ss/socks5 分享链接为 xray outbound（JSON）。 */
+    fun aiProtoParse(link: String): String = try { Yami.aiProtoParse(link) } catch (e: Throwable) { "err: ${e.message}" }
+    /** Agent 可用动作 schema（JSON 数组），供 UI 展示。 */
+    fun aiAgentActions(): String = try { Yami.aiAgentActions() } catch (e: Throwable) { "[]" }
+    /** 切换 Agent 离线任务规划器。 */
+    fun aiSetPlanner(on: Boolean): Boolean = try { Yami.aiSetPlanner(on) == "ok" } catch (e: Throwable) { false }
+
+    // Browser command queue (driven by AiBridge on a background thread).
+    fun aibrowserPending(): String = try { Yami.aiBrowserPending() } catch (e: Throwable) { "" }
+    fun aibrowserComplete(id: String, result: String) {
+        try { Yami.aiBrowserComplete(id, result) } catch (_: Throwable) {}
+    }
+
+    // ---------------- SSH session type ----------------
+    /** Open an SSH session. authType: "password" | "key"; secret is the
+     *  password or PEM private key. Returns the session id or "err:...". */
+    fun aiSshConnect(host: String, user: String, authType: String, secret: String): String =
+        try { Yami.aiSshConnect(host, user, authType, secret) } catch (e: Throwable) { "err: ${e.message}" }
+
+    /** Run a command on an SSH session; returns combined output or "err:...". */
+    fun aiSshExec(id: String, cmd: String): String =
+        try { Yami.aiSshExec(id, cmd) } catch (e: Throwable) { "err: ${e.message}" }
+
+    /** List active SSH session ids as a JSON array. */
+    fun aiSshList(): String = try { Yami.aiSshList() } catch (e: Throwable) { "[]" }
+
+    /** Close an SSH session; returns true on success. */
+    fun aiSshClose(id: String): Boolean = try { Yami.aiSshClose(id) == "1" } catch (e: Throwable) { false }
+
+    // ---------------- 代理池 / v2rayNG 对接 ----------------
+
+    /** 设置 WebView 抓包上游代理（http:// 或 socks5://），空串恢复直连。 */
+    fun aiSetUpstream(upstream: String): Boolean = try { Yami.aiSetUpstream(upstream) == "ok" } catch (e: Throwable) { false }
+
+    /** 读取当前上游代理（"" = 直连）。 */
+    fun aiGetUpstream(): String = try { Yami.aiGetUpstream() } catch (e: Throwable) { "" }
+
+    /** 探测 host:port 是否可达（用于检测 v2rayNG 本地代理端口）。 */
+    fun aiProbeUpstream(hostPort: String): Boolean = try { Yami.aiProbeUpstream(hostPort) == "1" } catch (e: Throwable) { false }
+}
+android/app/src/main/java/com/zedscope/app/ui/Skeleton.kt
+### android/app/src/main/java/com/zedscope/app/ui/Skeleton.kt
+package com.zedscope.app.ui
+
+import android.animation.ValueAnimator
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Shader
+import android.util.AttributeSet
+import android.view.View
+import android.view.ViewOutlineProvider
+import android.view.animation.LinearInterpolator
+import android.widget.FrameLayout
+import androidx.core.content.ContextCompat
+import com.zedscope.app.R
+
+/**
+ * A single, self-contained shimmer placeholder block (no external library).
+ *
+ * Draws a rounded base fill and a soft highlight that sweeps left to right on a
+ * loop, reading as the "precise skeleton" the product uses for every async
+ * load (capture log, token list, ...). The animation pauses when detached and
+ * resumes when attached, so no handler leaks.
+ */
+class SkeletonView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyle: Int = 0
+) : View(context, attrs, defStyle) {
+
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF()
+    private val radius = resources.getDimension(R.dimen.yami_radius_md)
+    private val base = ContextCompat.getColor(context, R.color.yami_surface_2)
+    private val hi = ContextCompat.getColor(context, R.color.yami_on_accent_soft)
+    private var sweep = 0f
+    private var progress = 0f
+
+    private val anim = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = 1100L
+        interpolator = LinearInterpolator()
+        repeatCount = ValueAnimator.INFINITE
+        repeatMode = ValueAnimator.RESTART
+        addUpdateListener {
+            progress = (it?.animatedValue as? Float) ?: 0f
+            invalidate()
+        }
+    }
+
+    init { if (!anim.isRunning) anim.start() }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        rect.set(0f, 0f, w.toFloat(), h.toFloat())
+        sweep = w * 0.7f
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        paint.shader = null
+        paint.color = base
+        canvas.drawRoundRect(rect, radius, radius, paint)
+        // 105°-ish diagonal neon-cyan micro-shimmer (ret2shell feel)
+        val start = -sweep + progress * (w + sweep)
+        val grad = LinearGradient(
+            start, h, start + sweep * 0.5f, 0f,
+            intArrayOf(base, hi, base),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = grad
+        canvas.drawRoundRect(rect, radius, radius, paint)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (!anim.isRunning) anim.start()
+    }
+
+    override fun onDetachedFromWindow() {
+        anim.cancel()
+        super.onDetachedFromWindow()
+    }
+}
+
+/**
+ * Three staggered dots shown while the AI is "thinking" — the calm equivalent
+ * of a skeleton for a streaming conversation (GitHub / Claude use the same cue).
+ */
+class TypingDots @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyle: Int = 0
+) : FrameLayout(context, attrs, defStyle) {
+
+    private val dots = ArrayList<View>(3)
+    private val animators = ArrayList<ValueAnimator>(3)
+
+    init {
+        val dp = resources.displayMetrics.density
+        val size = (8 * dp).toInt()
+        val gap = (6 * dp).toInt()
+        val color = ContextCompat.getColor(context, R.color.yami_accent)
+        repeat(3) {
+            val d = View(context).apply {
+                setBackgroundColor(color)
+                layoutParams = LayoutParams(size, size)
+                clipToOutline = true
+                outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        outline.setOval(0, 0, view.width, view.height)
+                    }
+                }
+            }
+            addView(d)
+            dots.add(d)
+        }
+        post {
+            val total = 3 * size + 2 * gap
+            val left = (width - total) / 2f
+            dots.forEachIndexed { i, v -> v.x = left + i * (size + gap) }
+        }
+    }
+
+    fun start() {
+        stop()
+        dots.forEachIndexed { i, v ->
+            val a = ValueAnimator.ofFloat(0.3f, 1f).apply {
+                duration = 520L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                startDelay = i * 140L
+                addUpdateListener { v.alpha = (it?.animatedValue as? Float) ?: 1f }
+            }
+            a.start()
+            animators.add(a)
+        }
+    }
+
+    fun stop() {
+        animators.forEach { it.cancel() }
+        animators.clear()
+        dots.forEach { it.alpha = 1f }
+    }
+
+    override fun onDetachedFromWindow() {
+        stop()
+        super.onDetachedFromWindow()
+    }
+}

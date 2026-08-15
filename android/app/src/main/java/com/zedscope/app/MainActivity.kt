@@ -23,6 +23,8 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.text.Editable
+import android.text.TextWatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -65,6 +67,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statTokens: TextView
     private lateinit var statLogins: TextView
     private lateinit var emptyCapture: TextView
+    private lateinit var etCaptureSearch: EditText
     private lateinit var emptyToken: TextView
     private lateinit var switchClean: MaterialSwitch
     private lateinit var switchVpn: MaterialSwitch
@@ -138,6 +141,7 @@ class MainActivity : AppCompatActivity() {
         statTokens = findViewById(R.id.statTokens)
         statLogins = findViewById(R.id.statLogins)
         emptyCapture = findViewById(R.id.emptyCapture)
+        etCaptureSearch = findViewById(R.id.etCaptureSearch)
         emptyToken = findViewById(R.id.emptyToken)
         switchClean = findViewById(R.id.switchClean)
         switchVpn = findViewById(R.id.switchVpn)
@@ -160,6 +164,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.btnCaptureBack).setOnClickListener { showPanel(1) }
         findViewById<android.view.View>(R.id.btnTokenBack).setOnClickListener { showPanel(1) }
 
+        setupCaptureSearch()
         setupWebView()
         setupPanels()
         setupSettings()
@@ -946,10 +951,23 @@ class MainActivity : AppCompatActivity() {
         typingDots.visibility = View.GONE
     }
 
-    private fun refreshCapture() {
-        val items = YamiCore.captures()
+    private fun setupCaptureSearch() {
+        etCaptureSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                renderCaptureItems(YamiCore.searchCaptures(s?.toString().orEmpty()))
+            }
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+    }
+
+    private fun renderCaptureItems(items: List<Record>) {
         captureAdapter.setItems(items)
         emptyCapture.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun refreshCapture() {
+        renderCaptureItems(YamiCore.searchCaptures(etCaptureSearch.text?.toString().orEmpty()))
         updateStats()
     }
 

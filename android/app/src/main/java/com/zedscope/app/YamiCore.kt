@@ -156,6 +156,18 @@ object YamiCore {
     /** 按 keyword/status/content_type 搜索抓包，返回 Record JSON 数组。 */
     fun aiSearchCaptures(json: String): String = try { Yami.aiSearchCaptures(json) } catch (e: Throwable) { "[]" }
 
+    /** Typed search facade used by the capture list. Empty keyword restores the full log. */
+    fun searchCaptures(keyword: String): List<Record> {
+        if (keyword.isBlank()) return captures()
+        return try {
+            val type = object : TypeToken<List<Record>>() {}.type
+            val query = gson.toJson(mapOf("keyword" to keyword.trim()))
+            gson.fromJson<List<Record>>(Yami.aiSearchCaptures(query), type) ?: emptyList()
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
     // ---------------- 协议 / 会话 / Agent 增强 ----------------
 
     /** Provider 健康 + active 状态（JSON 数组：{name,healthy,active}）。 */

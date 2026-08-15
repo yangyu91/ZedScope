@@ -43,6 +43,7 @@
     <string name="win_ssh">SSH</string>
     <string name="win_browser">浏览器 %1$d</string>
     <string name="cd_menu">菜单</string>
+    <string name="capture_search_hint">搜索 URL、域名、方法或状态码</string>
     <string name="empty_capture">还没有抓到任何请求\n用上方浏览器访问网页后，请求会实时出现在这里</string>
     <string name="empty_token">还没有提取到 Token\n登录任意网站后，检测到的凭证会自动归集到这里</string>
     <string name="section_capture">流量抓包</string>

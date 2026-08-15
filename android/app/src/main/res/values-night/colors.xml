@@ -1,56 +1,42 @@
 <resources>
+    <!-- Night system: GitHub dark canvas with Material 3 blue interaction roles. -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- =====================================================================
-         ZedScope design tokens — "Cyber Glass" NIGHT theme
-         =====================================================================
-         Deep blue-black canvas (OKLCH hue ≈ 222, never pure black) lit by a
-         single neon-cyan accent. Glass = 72% surface + blur for floating
-         chrome (top bar / bottom bar / FAB region). Hairline dividers, flat
-         fills, no gradients, no glows, no bounce.
+    <!-- Canvas and surface ramp -->
+    <color name="yami_bg">#FF0D1117</color>
+    <color name="yami_surface">#FF161B22</color>
+    <color name="yami_surface_2">#FF21262D</color>
+    <color name="yami_surface_3">#FF30363D</color>
+    <color name="yami_surface_4">#FF484F58</color>
+    <color name="yami_surface_glass">#E6161B22</color>
 
-         Mirrors values/colors.xml token-for-token — the DayNight swap keeps
-         every layout and style file identical across themes.
-         ===================================================================== -->
+    <!-- Content hierarchy -->
+    <color name="yami_on_surface">#FFE6EDF3</color>
+    <color name="yami_on_surface_dim">#FF8B949E</color>
+    <color name="yami_on_surface_faint">#FF6E7681</color>
 
-    <!-- surface ramp (bg -> highest) -->
-    <color name="yami_bg">#FF050B0E</color>
-    <color name="yami_surface">#FF0A1316</color>
-    <color name="yami_surface_2">#FF111B1F</color>
-    <color name="yami_surface_3">#FF1B272B</color>
-    <color name="yami_surface_4">#FF273439</color>
-    <!-- translucent surface for glass chrome (72%) -->
-    <color name="yami_surface_glass">#B80A1316</color>
+    <!-- Primary action -->
+    <color name="yami_accent">#FF58A6FF</color>
+    <color name="yami_accent_dim">#FF388BFD</color>
+    <color name="yami_accent_soft">#FF0D419D</color>
+    <color name="yami_accent_soft_2">#FF1F6FEB</color>
+    <color name="yami_on_accent">#FF0D1117</color>
+    <color name="yami_on_accent_soft">#FFB6E3FF</color>
+    <color name="yami_accent_ripple">#3D58A6FF</color>
 
-    <!-- content on surfaces -->
-    <color name="yami_on_surface">#FFEBF1F4</color>
-    <color name="yami_on_surface_dim">#FF9AA7AC</color>
-    <color name="yami_on_surface_faint">#FF657378</color>
+    <!-- Semantic roles -->
+    <color name="yami_danger">#FFFF7B72</color>
+    <color name="yami_danger_soft">#FF490202</color>
+    <color name="yami_warn">#FFD29922</color>
+    <color name="yami_warn_soft">#FF3D2A00</color>
+    <color name="yami_info">#FF58A6FF</color>
+    <color name="yami_info_soft">#FF0D419D</color>
+    <color name="yami_success">#FF3FB950</color>
 
-    <!-- accent: neon cyan — the only saturated colour -->
-    <color name="yami_accent">#FF00C7E0</color>
-    <color name="yami_accent_dim">#FF00A7BE</color>
-    <color name="yami_accent_soft">#FF002D35</color>
-    <color name="yami_accent_soft_2">#FF003B44</color>
-    <!-- readable content on top of the accent fill -->
-    <color name="yami_on_accent">#FF001317</color>
-    <color name="yami_on_accent_soft">#FF9DE1EE</color>
-    <!-- ripple / focus only (no glows) -->
-    <color name="yami_accent_ripple">#3800C7E0</color>
-
-    <!-- semantic, tinted to the same cool hue -->
-    <color name="yami_danger">#FFED756E</color>
-    <color name="yami_danger_soft">#FF3F1917</color>
-    <color name="yami_warn">#FFE8AA4E</color>
-    <color name="yami_warn_soft">#FF3B2706</color>
-    <color name="yami_info">#FF3CBBE1</color>
-    <color name="yami_info_soft">#FF082731</color>
-    <color name="yami_success">#FF5CCB89</color>
-
-    <!-- lines, scrims, soft shadow -->
-    <color name="yami_divider">#FF263033</color>
-    <color name="yami_divider_soft">#1FFFFFFF</color>
-    <color name="yami_scrim">#CC050B0E</color>
+    <!-- Hairlines and overlays -->
+    <color name="yami_divider">#FF30363D</color>
+    <color name="yami_divider_soft">#33E6EDF3</color>
+    <color name="yami_scrim">#990D1117</color>
     <color name="yami_shadow">#66000000</color>
 </resources>

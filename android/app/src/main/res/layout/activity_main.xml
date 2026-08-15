@@ -861,6 +861,23 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <EditText
+                    android:id="@+id/etCaptureSearch"
+                    style="@style/Yami.EditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/yami_space_lg"
+                    android:layout_marginTop="@dimen/yami_space_sm"
+                    android:layout_marginEnd="@dimen/yami_space_lg"
+                    android:layout_marginBottom="@dimen/yami_space_sm"
+                    android:hint="@string/capture_search_hint"
+                    android:inputType="text"
+                    android:singleLine="true"
+                    android:imeOptions="actionSearch"
+                    android:drawableStart="@drawable/ic_search"
+                    android:drawablePadding="@dimen/yami_space_sm"
+                    app:drawableTint="@color/yami_on_surface_dim" />
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
