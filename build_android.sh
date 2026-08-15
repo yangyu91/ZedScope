@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Local build of the yami-UA APK (Go core -> AAR -> signed APK).
+# Local build of the ZedScope APK (Go core -> AAR -> signed APK).
 #
 # Prerequisites (on a machine WITH internet access):
 #   - Go 1.22+
@@ -64,7 +64,7 @@ if [ ! -f "$DBG_KEYSTORE" ]; then
   keytool -genkeypair -v \
     -keystore "$DBG_KEYSTORE" -storepass android -keypass android \
     -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
-    -dname "CN=yami-UA Debug,O=YamiUA,C=US"
+    -dname "CN=ZedScope Debug,O=ZedScope,C=US"
 fi
 
 if [ -n "${KEYSTORE_FILE:-}" ]; then

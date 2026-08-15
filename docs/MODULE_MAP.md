@@ -82,4 +82,4 @@ Go core (yamiua module, 预编译 AAR，不可本地重建)
   Go 源码内的 `yami-UA` 字符串（CA CommonName、HAR 创建者名、过滤正则 `yami-ua`、系统提示词）
   **写死在 AAR 中**，改源码对出包无效；过滤正则尤其不可动（动则改变抓包行为）。
 - **包名已改**：`com.yamiua.app` → `com.zedscope.app`（目录/源码/布局/gradle/proguard 全改，`yami.Yami` 不动）。
-- **仓库重命名**：GitHub 仓库 `yangyu91/yami-UA` 需手动在 GitHub 改名（受 token 限制未自动完成）。
+- **仓库已重命名：yangyu91/ZedScope（由 yami-UA 改名而来，已完成）

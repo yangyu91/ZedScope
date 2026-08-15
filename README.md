@@ -20,7 +20,7 @@ export GH_TOKEN=ghp_你的令牌        # 需要 repo 权限
 ./push.sh                            # 建仓库 ZedScope + 推源码（自动触发构建）
 ```
 
-跑完打开 `https://github.com/<你的用户名>/yami-UA/actions` → 等 `Build APK` 跑完 →
+跑完打开 `https://github.com/<你的用户名>/ZedScope/actions` → 等 `Build APK` 跑完 →
 下载 **ZedScope-apk** 产物 → 安装即可。
 
 > 想在本机编译？见下方「本机构建」。`push.sh` 只把仓库推到 GitHub，令牌仅从环境变量读取、绝不写入仓库。

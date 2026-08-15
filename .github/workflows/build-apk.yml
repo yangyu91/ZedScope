@@ -77,7 +77,7 @@ jobs:
           keytool -genkeypair -v \
             -keystore ~/.android/debug.keystore -storepass android -keypass android \
             -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=yami-UA Debug,O=YamiUA,C=US"
+            -dname "CN=ZedScope Debug,O=ZedScope,C=US"
 
       - name: Build release APK
         env:
@@ -89,7 +89,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: yami-UA-apk
+          name: ZedScope-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
@@ -101,7 +101,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: yami-UA latest build
+          name: ZedScope latest build
           files: android/app/build/outputs/apk/release/*.apk
           prerelease: false
           fail_on_unmatched_files: true
