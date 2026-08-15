@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SSH 独立窗口页。ID 契约与 MainActivity.setupSshPanel() 对应：
+  btnSshBack etSshHost etSshUser etSshSecret switchSshKey tvSshStatus
+  btnSshConnect btnSshExec etSshCmd rvSshOut tvSshEmpty
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- 窗口顶栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/yami_space_sm"
+        android:paddingEnd="@dimen/yami_space_sm"
+        android:paddingTop="@dimen/yami_space_sm"
+        android:paddingBottom="@dimen/yami_space_sm"
+        android:background="@drawable/bg_topbar_soft">
+
+        <ImageButton
+            android:id="@+id/btnSshBack"
+            android:layout_width="@dimen/yami_icon_btn"
+            android:layout_height="@dimen/yami_icon_btn"
+            android:background="@drawable/bg_icon_btn"
+            android:src="@drawable/ic_back"
+            android:contentDescription="@string/cd_back"
+            app:tint="?attr/colorOnSurface" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:text="@string/ssh_title"
+            style="@style/Yami.Text.Title"
+            android:textSize="@dimen/yami_title_size" />
+    </LinearLayout>
+
+    <!-- 连接设置 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/yami_space_lg"
+        android:paddingEnd="@dimen/yami_space_lg"
+        android:paddingTop="@dimen/yami_space_md">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSshHost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:hint="@string/ssh_host"
+                android:inputType="textUri"
+                android:maxLines="1"
+                android:textSize="13sp"
+                style="@style/Yami.EditText" />
+
+            <Space
+                android:layout_width="@dimen/yami_space_sm"
+                android:layout_height="1dp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSshUser"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/ssh_user"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="13sp"
+                style="@style/Yami.EditText" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/yami_space_sm"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSshSecret"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/ssh_secret"
+                android:inputType="textPassword"
+                android:maxLines="1"
+                android:textSize="13sp"
+                style="@style/Yami.EditText" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchSshKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/yami_space_md" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ssh_key_mode"
+                android:textSize="12sp"
+                style="@style/Yami.Text.Dim" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/yami_space_md"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSshConnect"
+                style="@style/Yami.Button.Tonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ssh_connect" />
+
+            <TextView
+                android:id="@+id/tvSshStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/yami_space_md"
+                android:text="@string/ssh_status"
+                android:textSize="12sp"
+                style="@style/Yami.Text.Dim" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="@dimen/yami_space_md"
+            android:layout_marginBottom="@dimen/yami_space_xs"
+            android:background="@color/yami_divider" />
+    </LinearLayout>
+
+    <!-- 命令输出 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSshOut"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="@dimen/yami_list_padding"
+        android:layout_marginEnd="@dimen/yami_list_padding"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/tvSshEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:text="@string/ssh_empty"
+        style="@style/Yami.Text.Dim"
+        android:visibility="gone" />
+
+    <!-- 命令输入栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/yami_space_md"
+        android:paddingEnd="@dimen/yami_space_md"
+        android:paddingTop="@dimen/yami_space_sm"
+        android:paddingBottom="@dimen/yami_space_sm"
+        android:background="@drawable/bg_inputbar_soft">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSshCmd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/ssh_cmd_hint"
+            android:inputType="text"
+            android:maxLines="1"
+            android:imeOptions="actionSend"
+            android:textSize="14sp"
+            style="@style/Yami.EditText" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSshExec"
+            style="@style/Yami.Button.Tonal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/yami_space_sm"
+            android:minWidth="0dp"
+            app:icon="@drawable/ic_send"
+            app:iconGravity="textStart"
+            android:text="@string/ssh_exec" />
+    </LinearLayout>
+</LinearLayout>

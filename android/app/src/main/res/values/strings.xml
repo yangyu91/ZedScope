@@ -121,20 +121,35 @@
     <string name="ui_custom_saved">界面配置已保存</string>
 
     <!-- v2.3 对话式 AI 面板 -->
-    <string name="ai_chat_empty">还没有对话\n先在上方配置 Provider（或用 DeepSeek 白嫖），再到下方输入任务</string>
+    <string name="ai_chat_empty">还没有对话\n点右上角齿轮配置 Provider（或用 DeepSeek 白嫖），再到下方输入任务</string>
     <string name="ai_task_placeholder">例如：打开 github.com 并登录，把 token 复制给我</string>
     <string name="ai_thinking">AI 正在思考…</string>
     <string name="ai_agent_thinking">Agent 执行中…</string>
 
     <!-- SSH 会话类型 -->
-    <string name="ssh_title">SSH 会话</string>
+    <string name="ssh_title">SSH</string>
     <string name="ssh_host">主机 (host:port)</string>
     <string name="ssh_user">用户名</string>
     <string name="ssh_secret">密码 / PEM 私钥</string>
     <string name="ssh_key_mode">用密钥登录</string>
     <string name="ssh_connect">连接 SSH</string>
     <string name="ssh_exec">在 SSH 执行</string>
+    <string name="ssh_exec_btn">执行</string>
     <string name="ssh_status">未连接</string>
     <string name="ssh_connected">已连接：%1$s</string>
     <string name="ssh_exec_hint">命令用底部输入框，点「在 SSH 执行」即可在远程运行</string>
+    <string name="ssh_empty">还没有命令输出\n先连接 SSH，再输入命令执行</string>
+    <string name="ssh_cmd_hint">输入要在远程执行的命令</string>
+
+    <!-- v1.2 独立窗口：设置中心 -->
+    <string name="settings_group_modules">功能</string>
+    <string name="settings_group_general">通用</string>
+    <string name="row_ai_desc">对话 / Agent / 分析抓包</string>
+    <string name="row_ssh_desc">远程终端</string>
+    <string name="row_proxy_desc">代理池 / v2rayNG 对接</string>
+    <string name="row_capture_desc">实时网络日志</string>
+    <string name="row_token_desc">自动归集凭证</string>
+    <string name="proxy_import_group">导入</string>
+    <string name="proxy_pool_group">代理池</string>
+    <string name="proxy_pool_hint">点击代理池中第一条 socks/http 节点直接连接；vmess 类节点请先复制到 v2rayNG 导入，再点「连接 v2rayNG 本地代理」。</string>
 </resources>

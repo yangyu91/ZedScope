@@ -47,6 +47,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var flToken: android.widget.FrameLayout
     private lateinit var flSettings: android.widget.FrameLayout
     private lateinit var flAi: android.widget.FrameLayout
+    private lateinit var flSsh: android.widget.FrameLayout
+    private lateinit var flProxy: android.widget.FrameLayout
     private lateinit var skeletonCapture: android.widget.FrameLayout
     private lateinit var skeletonToken: android.widget.FrameLayout
     private lateinit var aiBridge: AiBridge
@@ -77,6 +79,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chipTasks: com.google.android.material.chip.ChipGroup
     private lateinit var typingDots: com.zedscope.app.ui.TypingDots
     private val chatHandler = Handler(Looper.getMainLooper())
+
+    // SSH 独立窗口
+    private lateinit var sshAdapter: ChatAdapter
+    private lateinit var rvSshOut: RecyclerView
+    private lateinit var tvSshEmpty: TextView
+    private lateinit var etSshCmd: EditText
 
     // ---- 多窗口（浏览器多开 / AI / SSH）----
     private val browserWebViews = mutableListOf<WebView>()   // 每个浏览器窗口一个 WebView
@@ -111,6 +119,8 @@ class MainActivity : AppCompatActivity() {
         flToken = findViewById(R.id.flToken)
         flSettings = findViewById(R.id.flSettings)
         flAi = findViewById(R.id.flAi)
+        flSsh = findViewById(R.id.flSsh)
+        flProxy = findViewById(R.id.flProxy)
         skeletonCapture = findViewById(R.id.skeletonCapture)
         skeletonToken = findViewById(R.id.skeletonToken)
         swipeCapture = findViewById(R.id.swipeCapture)
@@ -134,6 +144,15 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.btnWindows).setOnClickListener { showWindowMenu() }
         topBar = findViewById(R.id.topBar)
         setupImmersive()
+
+        // 设置中心 → 功能入口
+        findViewById<android.view.View>(R.id.rowAi).setOnClickListener { showPanel(2) }
+        findViewById<android.view.View>(R.id.rowSsh).setOnClickListener { showPanel(3) }
+        findViewById<android.view.View>(R.id.rowProxy).setOnClickListener { showPanel(4) }
+        findViewById<android.view.View>(R.id.rowCapture).setOnClickListener { showPanel(5) }
+        findViewById<android.view.View>(R.id.rowToken).setOnClickListener { showPanel(6) }
+        findViewById<android.view.View>(R.id.btnCaptureBack).setOnClickListener { showPanel(1) }
+        findViewById<android.view.View>(R.id.btnTokenBack).setOnClickListener { showPanel(1) }
 
         setupWebView()
         setupPanels()
@@ -162,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupAiPanel()
+        setupSshPanel()
         loadHome()
         boot("UI ready")
     }
@@ -212,9 +232,9 @@ class MainActivity : AppCompatActivity() {
                 val u = url ?: return true
                 // App-internal actions from the home page.
                 if (u.startsWith("yami://install-ca")) { installCa(); return true }
-                if (u.startsWith("yami://capture")) { showPanel(1); return true }
-                if (u.startsWith("yami://ai")) { showPanel(4); return true }
-                if (u.startsWith("yami://settings")) { showPanel(3); return true }
+                if (u.startsWith("yami://capture")) { showPanel(5); return true }
+                if (u.startsWith("yami://ai")) { showPanel(2); return true }
+                if (u.startsWith("yami://settings")) { showPanel(1); return true }
                 view?.loadUrl(u)
                 return true
             }
@@ -313,10 +333,7 @@ class MainActivity : AppCompatActivity() {
         bottomNav.setOnItemSelectedListener { item ->
             val which = when (item.itemId) {
                 R.id.nav_browser -> 0
-                R.id.nav_capture -> 1
-                R.id.nav_token -> 2
-                R.id.nav_settings -> 3
-                R.id.nav_ai -> 4
+                R.id.nav_settings -> 1
                 else -> -1
             }
             if (which >= 0) showPanel(which)
@@ -351,6 +368,9 @@ class MainActivity : AppCompatActivity() {
     private fun proxyPrefs() = getSharedPreferences(PREFS_PROXY, MODE_PRIVATE)
 
     private fun setupProxyPanel() {
+        // 代理窗口：返回设置中心
+        findViewById<View>(R.id.btnProxyBack).setOnClickListener { showPanel(1) }
+
         // 恢复上次保存的代理池
         val saved = proxyPrefs().getString("pool", "[]")
         try {
@@ -650,13 +670,33 @@ class MainActivity : AppCompatActivity() {
             runAgentTask(etInput.text.toString().trim())
         }
 
-        // ---- SSH 会话类型：连接远程主机并在其上执行命令 ----
+        // AI 窗口：返回设置中心 + 设置区折叠开关
+        findViewById<View>(R.id.btnAiBack).setOnClickListener { showPanel(1) }
+        val aiSettingsPanel = findViewById<View>(R.id.aiSettingsPanel)
+        findViewById<View>(R.id.btnAiSettings).setOnClickListener {
+            aiSettingsPanel.visibility = if (aiSettingsPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
+    }
+
+    // ===================== SSH 独立窗口 =====================
+    private fun setupSshPanel() {
+        findViewById<View>(R.id.btnSshBack).setOnClickListener { showPanel(1) }
+
         val etSshHost = findViewById<EditText>(R.id.etSshHost)
         val etSshUser = findViewById<EditText>(R.id.etSshUser)
         val etSshSecret = findViewById<EditText>(R.id.etSshSecret)
         val switchSshKey = findViewById<MaterialSwitch>(R.id.switchSshKey)
         val tvSshStatus = findViewById<TextView>(R.id.tvSshStatus)
+        etSshCmd = findViewById<EditText>(R.id.etSshCmd)
+        rvSshOut = findViewById(R.id.rvSshOut)
+        tvSshEmpty = findViewById(R.id.tvSshEmpty)
+        sshAdapter = ChatAdapter()
+        rvSshOut.layoutManager = LinearLayoutManager(this)
+        rvSshOut.itemAnimator = null
+        rvSshOut.adapter = sshAdapter
+        updateSshEmpty()
         var sshId = ""
+
         findViewById<View>(R.id.btnSshConnect).setOnClickListener {
             val host = etSshHost.text.toString().ifBlank { "127.0.0.1:22" }
             val user = etSshUser.text.toString().ifBlank { "root" }
@@ -675,23 +715,41 @@ class MainActivity : AppCompatActivity() {
                 }
             }.start()
         }
-        findViewById<View>(R.id.btnSshExec).setOnClickListener {
-            val cmd = etInput.text.toString().trim()
-            if (cmd.isBlank()) return@setOnClickListener
-            if (sshId.isBlank()) { tvSshStatus.text = "请先连接 SSH"; return@setOnClickListener }
-            chatAdapter.add(ChatMsg("user", "SSH $sshId \$ $cmd"))
-            updateChatEmpty()
-            showTyping()
-            Thread {
-                val r = YamiCore.aiSshExec(sshId, cmd)
-                runOnUiThread {
-                    hideTyping()
-                    chatAdapter.add(ChatMsg("ai", ""))
-                    streamInto(r.ifBlank { "（无输出）" })
-                }
-            }.start()
+        etSshCmd.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_GO) { runSshCmd(sshId); true } else false
         }
+        findViewById<View>(R.id.btnSshExec).setOnClickListener { runSshCmd(sshId) }
     }
+
+    private fun runSshCmd(sshId: String) {
+        val cmd = etSshCmd.text.toString().trim()
+        if (cmd.isBlank()) return
+        if (sshId.isBlank()) { Toast.makeText(this, "请先连接 SSH", Toast.LENGTH_SHORT).show(); return }
+        etSshCmd.setText("")
+        sshAdapter.add(ChatMsg("user", "SSH $sshId \$ $cmd"))
+        updateSshEmpty()
+        showSshTyping()
+        Thread {
+            val r = YamiCore.aiSshExec(sshId, cmd)
+            runOnUiThread {
+                hideSshTyping()
+                sshAdapter.add(ChatMsg("ai", ""))
+                streamInto(r.ifBlank { "（无输出）" }, sshAdapter, rvSshOut)
+            }
+        }.start()
+    }
+
+    private fun updateSshEmpty() {
+        val empty = sshAdapter.isEmpty()
+        tvSshEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+        rvSshOut.visibility = if (empty) View.GONE else View.VISIBLE
+    }
+
+    private fun showSshTyping() {
+        tvSshEmpty.visibility = View.GONE
+    }
+
+    private fun hideSshTyping() {}
 
     private fun runAgentTask(task: String) {
         if (task.isBlank()) return
@@ -710,17 +768,17 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    /** 打字机式流式：把完整文本逐帧写入最后一个 AI 气泡。 */
-    private fun streamInto(full: String) {
-        if (full.isBlank()) { chatAdapter.updateLast("（无内容）"); return }
+    /** 打字机式流式：把完整文本逐帧写入指定适配器的最后一个气泡。 */
+    private fun streamInto(full: String, adapter: ChatAdapter = chatAdapter, rv: RecyclerView = rvChat) {
+        if (full.isBlank()) { adapter.updateLast("（无内容）"); return }
         chatHandler.removeCallbacksAndMessages(null)
         var shown = 0
         val step = 4
         val runnable = object : Runnable {
             override fun run() {
                 shown = minOf(full.length, shown + step)
-                chatAdapter.updateLast(full.substring(0, shown))
-                rvChat.scrollToPosition(chatAdapter.itemCount - 1)
+                adapter.updateLast(full.substring(0, shown))
+                rv.scrollToPosition(adapter.itemCount - 1)
                 if (shown < full.length) chatHandler.postDelayed(this, 18)
             }
         }
@@ -771,7 +829,7 @@ class MainActivity : AppCompatActivity() {
     private fun showPanel(which: Int) {
         if (which == currentPanel) return
         currentPanel = which
-        val panels = arrayOf(flBrowser, flCapture, flToken, flSettings, flAi)
+        val panels = arrayOf(flBrowser, flSettings, flAi, flSsh, flProxy, flCapture, flToken)
         for (i in panels.indices) {
             val v = panels[i]
             v.visibility = if (i == which) View.VISIBLE else View.GONE
@@ -779,8 +837,10 @@ class MainActivity : AppCompatActivity() {
                 v.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.panel_fade_in))
             }
         }
-        if (which == 1) loadWithSkeleton(skeletonCapture, ::refreshCapture)
-        if (which == 2) loadWithSkeleton(skeletonToken, ::refreshToken)
+        // 子页（从设置中心进入）时底部导航高亮"设置"
+        if (which in 2..6) bottomNav.selectedItemId = R.id.nav_settings
+        if (which == 5) loadWithSkeleton(skeletonCapture, ::refreshCapture)
+        if (which == 6) loadWithSkeleton(skeletonToken, ::refreshToken)
     }
 
     /**
@@ -949,8 +1009,8 @@ class MainActivity : AppCompatActivity() {
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 9001 -> { newBrowserWindow(); true }
-                2000 -> { showPanel(4); true }
-                2001 -> { showPanel(4); true }  // SSH 在 AI 面板内
+                2000 -> { showPanel(2); true }
+                2001 -> { showPanel(3); true }
                 in 1000 until 2000 -> { switchBrowserWindow(item.itemId - 1000); true }
                 else -> false
             }
@@ -1006,6 +1066,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         when {
+            currentPanel in 2..6 -> { showPanel(1); bottomNav.selectedItemId = R.id.nav_settings }
             currentPanel != 0 -> { showPanel(0); bottomNav.selectedItemId = R.id.nav_browser }
             webView.canGoBack() -> webView.goBack()
             else -> super.onBackPressed()

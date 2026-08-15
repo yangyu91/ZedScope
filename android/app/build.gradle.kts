@@ -11,8 +11,8 @@ android {
         applicationId = "com.zedscope.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 100
-        versionName = "1.0.0"
+        versionCode = 102
+        versionName = "1.2.0"
     }
 
     // Signing: prefer a real keystore from the environment; fall back to the
