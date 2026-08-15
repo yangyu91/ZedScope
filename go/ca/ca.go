@@ -40,7 +40,7 @@ func NewCA() (*CA, error) {
 	}
 	tmpl := &x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "yami-UA CA", Organization: []string{"yami-UA"}},
+		Subject:               pkix.Name{CommonName: "ZedScope CA", Organization: []string{"ZedScope"}},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().AddDate(10, 0, 0),
 		IsCA:                  true,
